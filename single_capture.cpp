@@ -32,7 +32,7 @@ static void cinemavi_camera_configure(ArvCamera *camera, double shutter_us, doub
     if (!(*error)) arv_camera_set_float(camera, "BalanceRatio", 1.0, error);
 }
 
-static int cinemavi_buffer_to_dng(ArvBuffer *buffer, const char *dng_name)
+static int cinemavi_buffer_to_dng(ArvBuffer *buffer, const char *dng_name, const char *camera_model)
 {
     int width = arv_buffer_get_image_width(buffer);
     int height = arv_buffer_get_image_height(buffer);
@@ -42,7 +42,7 @@ static int cinemavi_buffer_to_dng(ArvBuffer *buffer, const char *dng_name)
     // set some mandatory tags
     dng_image.SetDNGVersion(1, 5, 0, 0);
     dng_image.SetOrientation(tinydngwriter::ORIENTATION_TOPLEFT);
-    dng_image.SetUniqueCameraModel("Cinemavi");
+    dng_image.SetUniqueCameraModel(camera_model);
 
     dng_image.SetBigEndian(false);
     dng_image.SetSubfileType(false, false, false);
@@ -66,6 +66,17 @@ static int cinemavi_buffer_to_dng(ArvBuffer *buffer, const char *dng_name)
     dng_image.SetCFARepeatPatternDim(2, 2);
     const uint8_t cpat[4] = {0, 1, 1, 2};
     dng_image.SetCFAPattern(4, cpat);
+
+    // Colour calibration
+    dng_image.SetCalibrationIlluminant1(17); // StdA
+    dng_image.SetCalibrationIlluminant2(21); // D65
+    const double idmat[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+    dng_image.SetColorMatrix1(3, idmat);
+    dng_image.SetColorMatrix2(3, idmat);
+    dng_image.SetCameraCalibration1(3, idmat);
+    dng_image.SetCameraCalibration2(3, idmat);
+    const double ntrl[3] = {1, 1, 1};
+    dng_image.SetAsShotNeutral(3, ntrl);
 
     size_t imsz;
     const uint8_t *imbuf = (const uint8_t *) arv_buffer_get_data(buffer, &imsz);
@@ -93,7 +104,8 @@ int main (int argc, char **argv)
     camera = arv_camera_new(NULL, &error);
 
     if (ARV_IS_CAMERA(camera)) {
-        printf("Found camera '%s'\n", arv_camera_get_model_name(camera, NULL));
+        const char *camera_model = arv_camera_get_model_name(camera, NULL);
+        printf("Found camera '%s'\n", camera_model);
 
         // Set configuration
         cinemavi_camera_configure(camera, 50000, 5, &error);
@@ -110,7 +122,7 @@ int main (int argc, char **argv)
 
             if (argc > 1) {
                 printf("Writing buffer to DNG: %s\n", argv[1]);
-                int dng_stat = cinemavi_buffer_to_dng(buffer, argv[1]);
+                int dng_stat = cinemavi_buffer_to_dng(buffer, argv[1], camera_model);
                 if (dng_stat != 0) printf("Error %d writing DNG.\n", dng_stat);
                 else printf("DNG written.\n");
             }
