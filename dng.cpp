@@ -1,4 +1,5 @@
 #include "dng.h"
+#include "debayer.h"
 
 #define TINY_DNG_WRITER_IMPLEMENTATION
 #include "tiny_dng_writer.h"
@@ -9,6 +10,9 @@ int arv_buffer_to_dng(ArvBuffer *buffer, const char *dng_name, const char *camer
     int height = arv_buffer_get_image_height(buffer);
     tinydngwriter::DNGImage dng_image;
     tinydngwriter::DNGWriter dng_writer(false); // little endian DNG
+
+    if (arv_buffer_get_payload_type(buffer) != ARV_BUFFER_PAYLOAD_TYPE_IMAGE)
+        return -2;
 
     // set some mandatory tags
     dng_image.SetDNGVersion(1, 5, 0, 0);
@@ -52,7 +56,17 @@ int arv_buffer_to_dng(ArvBuffer *buffer, const char *dng_name, const char *camer
 
     size_t imsz;
     const uint8_t *imbuf = (const uint8_t *) arv_buffer_get_data(buffer, &imsz);
-    dng_image.SetImageData(imbuf, imsz);
+    ArvPixelFormat pfmt = arv_buffer_get_image_pixel_format(buffer);
+    std::vector<uint16_t> unpacked;
+    if (ARV_PIXEL_FORMAT_BIT_PER_PIXEL(pfmt) == 12) {
+        unpacked.resize(width * height);
+        unpack12_16(unpacked.data(), imbuf, width*height, true);
+        dng_image.SetImageData((uint8_t *)unpacked.data(), unpacked.size() * sizeof(uint16_t));
+    } else if (ARV_PIXEL_FORMAT_BIT_PER_PIXEL(pfmt) == 16) {
+        dng_image.SetImageData(imbuf, imsz);
+    } else {
+        return -3;
+    }
     dng_writer.AddImage(&dng_image);
 
     std::string err;

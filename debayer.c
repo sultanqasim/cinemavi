@@ -1,7 +1,7 @@
 #include "debayer.h"
 #include <assert.h>
 
-void unpack12_16(const void *packed12, uint16_t *unpacked, size_t num_elems, bool scale_up)
+void unpack12_16(uint16_t *unpacked, const void *packed12, size_t num_elems, bool scale_up)
 {
     const uint8_t *packed = (const uint8_t *)packed12;
     size_t n = 0;

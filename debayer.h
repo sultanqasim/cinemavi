@@ -9,7 +9,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 
-void unpack12_16(const void *packed12, uint16_t *unpacked, size_t num_elems, bool scale_up);
+void unpack12_16(uint16_t *unpacked, const void *packed12, size_t num_elems, bool scale_up);
 
 // assume RGGB pixel layout for each 2x2 square starting at top, and column major image layout
 // output buffer (rgb) should be 3x size of input buffer (bayer)

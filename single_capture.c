@@ -14,8 +14,7 @@ static void cinemavi_camera_configure(ArvCamera *camera, double shutter_us, doub
     if (!(*error)) arv_camera_get_width_bounds(camera, &wmin, &wmax, error);
     if (!(*error)) arv_camera_get_height_bounds(camera, &hmin, &hmax, error);
     if (!(*error)) arv_camera_set_region(camera, 0, 0, wmax, hmax, error);
-    //if (!(*error)) arv_camera_set_pixel_format(camera, ARV_PIXEL_FORMAT_BAYER_RG_12P, error);
-    if (!(*error)) arv_camera_set_pixel_format(camera, ARV_PIXEL_FORMAT_BAYER_RG_16, error);
+    if (!(*error)) arv_camera_set_pixel_format(camera, ARV_PIXEL_FORMAT_BAYER_RG_12P, error);
     if (!(*error)) arv_camera_set_binning(camera, 1, 1, error);
 
     // Exposure
