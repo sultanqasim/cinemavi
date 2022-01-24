@@ -11,8 +11,8 @@ LFLAGS += -L$(GLIB_DIR)/lib -lgobject-2.0
 
 all: single_capture
 
-single_capture: single_capture.opp
-	$(CPP) $(LFLAGS) $< -o $@
+single_capture: single_capture.o dng.opp colour_xfrm.o
+	$(CPP) $(LFLAGS) $^ -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
