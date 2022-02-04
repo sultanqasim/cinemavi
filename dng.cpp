@@ -6,8 +6,8 @@
 
 int arv_buffer_to_dng(ArvBuffer *buffer, const char *dng_name, const char *camera_model)
 {
-    int width = arv_buffer_get_image_width(buffer);
-    int height = arv_buffer_get_image_height(buffer);
+    unsigned int width = arv_buffer_get_image_width(buffer);
+    unsigned int height = arv_buffer_get_image_height(buffer);
     tinydngwriter::DNGImage dng_image;
     tinydngwriter::DNGWriter dng_writer(false); // little endian DNG
 
@@ -24,8 +24,10 @@ int arv_buffer_to_dng(ArvBuffer *buffer, const char *dng_name, const char *camer
     dng_image.SetImageWidth(width);
     dng_image.SetImageLength(height);
     dng_image.SetRowsPerStrip(height);
+    const unsigned int active_area[4] = {0, 0, height, width};
+    dng_image.SetActiveArea(active_area);
     dng_image.SetSamplesPerPixel(1);
-    const uint16_t bpp[1] = {16}; //{12};
+    const uint16_t bpp[1] = {16};
     dng_image.SetBitsPerSample(1, bpp);
     const uint16_t sf[1] = {tinydngwriter::SAMPLEFORMAT_UINT};
     dng_image.SetSampleFormat(1, sf);
