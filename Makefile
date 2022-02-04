@@ -11,7 +11,7 @@ LFLAGS += -L$(GLIB_DIR)/lib -lgobject-2.0
 
 all: single_capture
 
-single_capture: single_capture.o dng.opp colour_xfrm.o debayer.o convolve.o noise_reduction.o
+single_capture: single_capture.o dng.opp colour_xfrm.o debayer.o convolve.o noise_reduction.o gamma.o pipeline.o
 	$(CPP) $(LFLAGS) $^ -o $@
 
 %.o: %.c
