@@ -15,11 +15,6 @@ void gaussian_kernel(float *kernel, unsigned int n, float c)
     }
 }
 
-static inline unsigned int array_idx(unsigned int x, unsigned int y, unsigned int chan, unsigned int width)
-{
-    return 3 * (x + y*width) + chan;
-}
-
 static inline float convolve_pixel(const float *img, unsigned int width, unsigned int height,
         const float *kernel, unsigned int n, unsigned int x, unsigned int y, unsigned int chan)
 {
@@ -37,7 +32,7 @@ static inline float convolve_pixel(const float *img, unsigned int width, unsigne
 
     for (unsigned int i = 0; i < n; i++) {
         for (unsigned int j = 0; j < n; j++) {
-            s += img[array_idx(x_base + j, y_base + i, chan, width)] * kernel[i*n + j];
+            s += img[image_idx(x_base + j, y_base + i, chan, width)] * kernel[i*n + j];
         }
     }
 
@@ -62,7 +57,7 @@ static inline float convolve_pixel_edge(const float *img, unsigned int width, un
 
     for (unsigned int i = 0; i < n; i++) {
         for (unsigned int j = 0; j < n; j++) {
-            s += img[array_idx(bounded_idx(x_base + j, 0, width),
+            s += img[image_idx(bounded_idx(x_base + j, 0, width),
                                bounded_idx(y_base + i, 0, height),
                                chan, width)]
                 * kernel[i*n + j];
@@ -84,7 +79,7 @@ void convolve_img(const float *img_in, float *img_out, unsigned int width, unsig
     for (unsigned int y = 0; y < k; y++) {
         for (unsigned int x = 0; x < width; x++) {
             for (unsigned int chan = 0; chan < 3; chan++) {
-                img_out[array_idx(x, y, chan, width)] =
+                img_out[image_idx(x, y, chan, width)] =
                     convolve_pixel_edge(img_in, width, height, kernel, n, x, y, chan);
             }
         }
@@ -94,7 +89,7 @@ void convolve_img(const float *img_in, float *img_out, unsigned int width, unsig
     for (unsigned int y = k; y < height - k; y++) {
         for (unsigned int x = 0; x < k; x++) {
             for (unsigned int chan = 0; chan < 3; chan++) {
-                img_out[array_idx(x, y, chan, width)] =
+                img_out[image_idx(x, y, chan, width)] =
                     convolve_pixel_edge(img_in, width, height, kernel, n, x, y, chan);
             }
         }
@@ -104,7 +99,7 @@ void convolve_img(const float *img_in, float *img_out, unsigned int width, unsig
     for (unsigned int y = k; y < height - k; y++) {
         for (unsigned int x = width - k; x < width; x++) {
             for (unsigned int chan = 0; chan < 3; chan++) {
-                img_out[array_idx(x, y, chan, width)] =
+                img_out[image_idx(x, y, chan, width)] =
                     convolve_pixel_edge(img_in, width, height, kernel, n, x, y, chan);
             }
         }
@@ -114,7 +109,7 @@ void convolve_img(const float *img_in, float *img_out, unsigned int width, unsig
     for (unsigned int y = height - k; y < height; y++) {
         for (unsigned int x = 0; x < width; x++) {
             for (unsigned int chan = 0; chan < 3; chan++) {
-                img_out[array_idx(x, y, chan, width)] =
+                img_out[image_idx(x, y, chan, width)] =
                     convolve_pixel_edge(img_in, width, height, kernel, n, x, y, chan);
             }
         }
@@ -124,7 +119,7 @@ void convolve_img(const float *img_in, float *img_out, unsigned int width, unsig
     for (unsigned int y = k; y < height - k; y++) {
         for (unsigned int x = k; x < width - k; x++) {
             for (unsigned int chan = 0; chan < 3; chan++) {
-                img_out[array_idx(x, y, chan, width)] =
+                img_out[image_idx(x, y, chan, width)] =
                     convolve_pixel(img_in, width, height, kernel, n, x, y, chan);
             }
         }

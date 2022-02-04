@@ -5,12 +5,12 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-
-// TKTK:
-// inputs: YCbCr image, width, height
-// outputs: filtered YCbCr image (must be different, not in-place)
-// options: gaussian radius, kernel size (3x3, 5x5, 7x7, 9x9), Y value above which NR would not be applied on each colour plane (Y and CbCr)
+// convolves image using 7x7 gaussian kernel
+// outputs weighted average of original image and convolved image, weighted based on luminance
+// luminance is (R+G+B) / 3
+// no NR applied to pixels with luminance values above intensity argument
+void noise_reduction_rgb(const float *img_in, float *img_out, unsigned int width, unsigned int height,
+        float intensity);
 
 #ifdef __cplusplus
 }

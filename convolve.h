@@ -15,6 +15,11 @@ void gaussian_kernel(float *kernel, unsigned int n, float c);
 void convolve_img(const float *img_in, float *img_out, unsigned int width, unsigned int height,
         const float *kernel, unsigned int n);
 
+static inline unsigned int image_idx(unsigned int x, unsigned int y, unsigned int chan, unsigned int width)
+{
+    return 3 * (x + y*width) + chan;
+}
+
 #ifdef __cplusplus
 }
 #endif
