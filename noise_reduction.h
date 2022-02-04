@@ -7,10 +7,19 @@ extern "C" {
 
 // convolves image using 7x7 gaussian kernel
 // outputs weighted average of original image and convolved image, weighted based on luminance
-// luminance is (R+G+B) / 3
+// luminance is (R+G+B) / sqrt(3)
 // no NR applied to pixels with luminance values above intensity argument
 void noise_reduction_rgb(const float *img_in, float *img_out, unsigned int width, unsigned int height,
         float intensity);
+
+// similar to above, but with separate luminance and chrominance NR
+// slower due to transform from RGB to YCrCg and back
+void noise_reduction_rgb2(const float *img_in, float *img_out, unsigned int width, unsigned int height,
+        float intensity_lum, float intensity_chrom);
+
+// similar to above, but faster since input and output image is YCrCg
+void noise_reduction_ycrcg(const float *img_in, float *img_out, unsigned int width, unsigned int height,
+        float intensity_lum, float intensity_chrom);
 
 #ifdef __cplusplus
 }

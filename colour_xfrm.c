@@ -10,6 +10,12 @@ void print_mat(const ColourMatrix *cmat)
     printf("%.3f %.3f %.3f\n", cmat->m[6], cmat->m[7], cmat->m[8]);
 }
 
+void cmat_d2f(const ColourMatrix *cmat, ColourMatrix_f *cmat_f)
+{
+    for (int i = 0; i < 9; i++)
+        cmat_f->m[i] = cmat->m[i];
+}
+
 /* generate a colour correction matrix
  *
  * warmth:
@@ -84,12 +90,43 @@ void colour_matrix(ColourMatrix *cmat, double warmth, double tint, double hue, d
     colour_matmult33(cmat, &work2_mat, &sat_mat);
 }
 
-// converts rgb 16-bit image to YCbCr floating point image and fixes colour,
-// through a single matrix multiplication per pixel
-void colour_xfrm(const uint16_t *rgb, float *ycbcr, uint16_t width, uint16_t height, const ColourMatrix *cmat);
-// TODO
-// To convert to YCbCr space, project RGB vector onto YCbCr primaries in RGB space
-// ie. dot product RGB vector with each YCbCr primary, divided by magnitude of primary
+// convert 16-bit integer to floating point image
+void colour_i2f(const uint16_t *img_in, float *img_out, uint16_t width, uint16_t height)
+{
+    for (uint32_t i = 0; i < width * height * 3; i++)
+        img_out[i] = img_in[i];
+}
+
+// convert floating point image to 16-bit integer
+// if bound != 0, also ensure 0 <= pixel_value <= bound
+void colour_f2i(const float *img_in, uint16_t *img_out, uint16_t width, uint16_t height, uint16_t bound)
+{
+    if (bound == 0) {
+        for (uint32_t i = 0; i < width * height * 3; i++)
+            img_out[i] = img_in[i];
+    } else {
+        for (uint32_t i = 0; i < width * height * 3; i++) {
+            float v = img_in[i];
+            if (v < 0)
+                img_out[i] = 0;
+            else if (v > bound)
+                img_out[i] = bound;
+            else
+                img_out[i] = v;
+        }
+    }
+}
+
+// apply a colour matrix transformation to every pixel in the image
+void colour_xfrm(const float *img_in, float *img_out, uint16_t width, uint16_t height,
+        const ColourMatrix_f *cmat)
+{
+    const ColourPixel *imgp_in = (const ColourPixel *)img_in;
+    ColourPixel *imgp_out = (ColourPixel *)img_out;
+
+    for (uint32_t i = 0; i < width * height; i++)
+        pixel_xfrm(imgp_in + i, imgp_out + i, cmat);
+}
 
 // C = A * B
 void colour_matmult33(ColourMatrix *C, const ColourMatrix *A, const ColourMatrix *B)

@@ -36,11 +36,31 @@ static const ColourMatrix CM_RGB2YCrCg = {.m={
     0.        ,  0.70710678, -0.70710678
 }};
 
+static const ColourMatrix_f CMf_RGB2YCrCg = {.m={
+    0.57735027,	 0.57735027,  0.57735027,
+    0.81649658, -0.40824829, -0.40824829,
+    0.        ,  0.70710678, -0.70710678
+}};
+
 static const ColourMatrix CM_YCrCg2RGB = {.m={
     0.57735027,  0.81649658,  0.        ,
     0.57735027, -0.40824829,  0.70710678,
     0.57735027, -0.40824829, -0.70710678
 }};
+
+static const ColourMatrix_f CMf_YCrCg2RGB = {.m={
+    0.57735027,  0.81649658,  0.        ,
+    0.57735027, -0.40824829,  0.70710678,
+    0.57735027, -0.40824829, -0.70710678
+}};
+
+static inline void pixel_rgb2ycrcg(const ColourPixel *pix_in, ColourPixel *pix_out) {
+    pixel_xfrm(pix_in, pix_out, &CMf_RGB2YCrCg);
+}
+
+static inline void pixel_ycrcg2rgb(const ColourPixel *pix_in, ColourPixel *pix_out) {
+    pixel_xfrm(pix_in, pix_out, &CMf_YCrCg2RGB);
+}
 
 #ifdef __cplusplus
 }
