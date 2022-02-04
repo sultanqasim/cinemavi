@@ -10,7 +10,7 @@ void gaussian_kernel(float *kernel, unsigned int n, float c)
         for (unsigned int j = 0; j < n; j++) {
             float x = corner + j;
             float y = corner + i;
-            kernel[i*n + j] = exp((x*x + y*y) / (2 * c*c));
+            kernel[i*n + j] = exp((x*x + y*y) / (-2 * c*c));
         }
     }
 }
