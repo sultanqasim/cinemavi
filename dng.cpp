@@ -77,3 +77,38 @@ int arv_buffer_to_dng(ArvBuffer *buffer, const char *dng_name, const char *camer
 
     return 0;
 }
+
+int rgb8_to_tiff(const uint8_t *img, uint32_t width, uint32_t height, const char *tiff_name)
+{
+    tinydngwriter::DNGImage dng_image;
+    tinydngwriter::DNGWriter dng_writer(false); // little endian DNG
+
+    dng_image.SetBigEndian(false);
+    dng_image.SetSubfileType(false, false, false);
+    dng_image.SetImageWidth(width);
+    dng_image.SetImageLength(height);
+    dng_image.SetRowsPerStrip(height);
+
+    dng_image.SetSamplesPerPixel(3);
+    const uint16_t bpp[3] = {8, 8, 8};
+    dng_image.SetBitsPerSample(3, bpp);
+    const uint16_t sf[1] = {tinydngwriter::SAMPLEFORMAT_UINT};
+    dng_image.SetSampleFormat(1, sf);
+    dng_image.SetCompression(tinydngwriter::COMPRESSION_NONE);
+    dng_image.SetPlanarConfig(tinydngwriter::PLANARCONFIG_CONTIG);
+
+    dng_image.SetXResolution(1.0);
+    dng_image.SetYResolution(1.0);
+    dng_image.SetResolutionUnit(tinydngwriter::RESUNIT_NONE);
+
+    dng_image.SetPhotometric(tinydngwriter::PHOTOMETRIC_RGB);
+
+    dng_image.SetImageData(img, width * height * 3);
+    dng_writer.AddImage(&dng_image);
+
+    std::string err;
+    dng_writer.WriteToFile(tiff_name, &err);
+    if (!err.empty()) return -1;
+
+    return 0;
+}
