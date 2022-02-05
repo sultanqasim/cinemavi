@@ -66,6 +66,10 @@ void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
      */
     const double k = 0.05;
     double ln_k = log(k);
+
+    // bound shadow so that shadow * g(1) < 1
+    if (shadow >= -ln_k) shadow = ln_k * -0.999;
+
     double a = 1 + shadow/ln_k;
     double b = -1 / ((1-k) * ln_k);
     double b_shadow = b * shadow;
@@ -74,7 +78,6 @@ void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
     assert(bit_depth <= 16);
     assert(gamma > 0);
     assert(shadow >= 0);
-    assert(shadow < -ln_k);
 
     for (int i = 0; i < 1 << bit_depth; i++) {
         double x = i * i_scale;
