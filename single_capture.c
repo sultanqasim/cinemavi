@@ -64,7 +64,7 @@ int main (int argc, char **argv)
                 if (rgb8 != NULL) {
                     ImagePipelineParams params = {
                         .warmth = 0.0,
-                        .tint = 0.0,
+                        .tint = 0.15,
                         .hue = 0.0,
                         .sat = 1.0,
                         .nr_lum = 250.0,
