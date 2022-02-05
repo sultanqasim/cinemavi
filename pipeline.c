@@ -22,7 +22,7 @@ int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
         goto cleanup;
     }
 
-    if (width >= 32768 || height >= 32768) {
+    if (width >= 32768 || (width & 1) || height >= 32768 || (height & 1)) {
         status = -EINVAL;
         goto cleanup;
     }
