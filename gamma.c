@@ -2,6 +2,12 @@
 #include <assert.h>
 #include "gamma.h"
 
+// multiply gamma corrector by this to have deep blacks
+static inline double black_crush(double x)
+{
+    return 1.0 - pow(0.01, 50*x);
+}
+
 // generate lut for gamma encoding a linear space image
 // bit depth should be between 8 and 16
 // length of lut should be 1 << bit_depth
@@ -13,8 +19,10 @@ void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth)
     assert(bit_depth >= 8);
     assert(bit_depth <= 16);
 
-    for (int i = 0; i < 1 << bit_depth; i++)
-        lut[i] = 255.999 * pow(i * i_scale, G);
+    for (int i = 0; i < 1 << bit_depth; i++) {
+        double x = i * i_scale;
+        lut[i] = 255.999 * pow(x, G) * black_crush(x);
+    }
 }
 
 // apply cubic base curve before gamma encoding
@@ -34,7 +42,7 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth,
         // f(x) must be in [0, 1] for x in [0, 1]
         double x = i * i_scale;
         double y = a*x*x*x + b*x*x + c*x;
-        lut[i] = 255.999 * pow(y, G);
+        lut[i] = 255.999 * pow(y, G) * black_crush(y);
     }
 }
 
@@ -82,7 +90,7 @@ void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
     for (int i = 0; i < 1 << bit_depth; i++) {
         double x = i * i_scale;
         double y = a*pow(x, gamma/x) + b_shadow*(1 - pow(k, x));
-        lut[i] = 255.999 * pow(y, G);
+        lut[i] = 255.999 * pow(y, G) * black_crush(y);
     }
 }
 
