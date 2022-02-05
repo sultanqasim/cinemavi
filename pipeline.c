@@ -48,7 +48,11 @@ int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
     }
 
     // Step 4: Gamma encode
-    gamma_gen_lut(glut, 12);
+    if (params->gamma <= 0.001) {
+        gamma_gen_lut(glut, 12);    // linear
+    } else { // filmic
+        gamma_gen_lut_filmic(glut, 12, params->gamma, params->shadow);
+    }
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
@@ -99,7 +103,11 @@ int pipeline_process_image_bin22(const void *bayer12p, uint8_t *rgb8, uint16_t w
     colour_f2i(rgbf_1, rgb12, width_out, height_out, 4095);
 
     // Step 3: Gamma encode
-    gamma_gen_lut(glut, 12);
+    if (params->gamma <= 0.001) {
+        gamma_gen_lut(glut, 12);    // linear
+    } else {
+        gamma_gen_lut_filmic(glut, 12, params->gamma, params->shadow);
+    }
     gamma_encode(rgb12, rgb8, width_out, height_out, glut);
 
 cleanup:

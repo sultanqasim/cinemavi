@@ -14,6 +14,8 @@ typedef struct {
     double sat;
     double nr_lum;
     double nr_chrom;
+    double gamma;
+    double shadow;
 } ImagePipelineParams;
 
 int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
