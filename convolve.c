@@ -36,7 +36,7 @@ static inline float convolve_pixel(const float *img, unsigned int width, unsigne
     unsigned int x_base = x - k;
     unsigned int y_base = y - k;
     float s = 0;
-    (void)height; // suppress unussed warning
+    (void)height; // suppress unused warning
 
     for (unsigned int i = 0; i < n; i++) {
         for (unsigned int j = 0; j < n; j++) {
@@ -124,11 +124,41 @@ void convolve_img(const float *img_in, float *img_out, unsigned int width, unsig
     }
 
     // inside
-    for (unsigned int y = k; y < height - k; y++) {
-        for (unsigned int x = k; x < width - k; x++) {
-            for (unsigned int chan = 0; chan < 3; chan++) {
-                img_out[image_idx(x, y, chan, width)] =
-                    convolve_pixel(img_in, width, height, kernel, n, x, y, chan);
+    // optimize dedicated code paths for common kernel sizes
+    if (n == 3) {
+        for (unsigned int y = k; y < height - k; y++) {
+            for (unsigned int x = k; x < width - k; x++) {
+                for (unsigned int chan = 0; chan < 3; chan++) {
+                    img_out[image_idx(x, y, chan, width)] =
+                        convolve_pixel(img_in, width, height, kernel, 3, x, y, chan);
+                }
+            }
+        }
+    } else if (n == 5) {
+        for (unsigned int y = k; y < height - k; y++) {
+            for (unsigned int x = k; x < width - k; x++) {
+                for (unsigned int chan = 0; chan < 3; chan++) {
+                    img_out[image_idx(x, y, chan, width)] =
+                        convolve_pixel(img_in, width, height, kernel, 5, x, y, chan);
+                }
+            }
+        }
+    } else if (n == 7) {
+        for (unsigned int y = k; y < height - k; y++) {
+            for (unsigned int x = k; x < width - k; x++) {
+                for (unsigned int chan = 0; chan < 3; chan++) {
+                    img_out[image_idx(x, y, chan, width)] =
+                        convolve_pixel(img_in, width, height, kernel, 7, x, y, chan);
+                }
+            }
+        }
+    } else {
+        for (unsigned int y = k; y < height - k; y++) {
+            for (unsigned int x = k; x < width - k; x++) {
+                for (unsigned int chan = 0; chan < 3; chan++) {
+                    img_out[image_idx(x, y, chan, width)] =
+                        convolve_pixel(img_in, width, height, kernel, n, x, y, chan);
+                }
             }
         }
     }
