@@ -4,9 +4,9 @@
 // generate lut for gamma encoding a linear space image
 // bit depth should be between 8 and 16
 // length of lut should be 1 << bit_depth
-void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth, double gamma)
+void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth)
 {
-    double G = 1.0 / gamma;
+    double G = 8.0 / bit_depth;
     double i_scale = 1.0 / (1 << bit_depth);
 
     for (int i = 0; i < 1 << bit_depth; i++)

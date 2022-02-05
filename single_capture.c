@@ -69,7 +69,6 @@ int main (int argc, char **argv)
                         .sat = 1.0,
                         .nr_lum = 250.0,
                         .nr_chrom = 500.0,
-                        .gamma = 2.2
                     };
                     printf("Processing image...\n");
                     pipeline_process_image(imbuf, rgb8, width, height, &params);

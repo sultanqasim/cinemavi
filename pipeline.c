@@ -44,7 +44,7 @@ int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
 
     // Step 4: Convert back to integer and gamma encode
     colour_f2i(rgbf_0, rgb12, width, height, 4095);
-    gamma_gen_lut(glut, 12, params->gamma);
+    gamma_gen_lut(glut, 12);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
