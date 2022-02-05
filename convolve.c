@@ -13,6 +13,14 @@ void gaussian_kernel(float *kernel, unsigned int n, float c)
             kernel[i*n + j] = exp((x*x + y*y) / (-2 * c*c));
         }
     }
+
+    // now normalize for unit weight
+    float sum = 0;
+    for (unsigned int i = 0; i < n*n; i++)
+        sum += kernel[i];
+    float sum_inv = 1.0 / sum;
+    for (unsigned int i = 0; i < n*n; i++)
+        kernel[i] *= sum_inv;
 }
 
 static inline float convolve_pixel(const float *img, unsigned int width, unsigned int height,
