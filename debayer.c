@@ -165,3 +165,28 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
 
 // TODO
 void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height);
+
+// fast pixel binned 2x2 debayer
+// rgb output is half the input width and height
+void debayer22_binned(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height)
+{
+    // assumes width and height are even
+    assert((width & 0x01) == 0);
+    assert((height & 0x01) == 0);
+    assert(width >= 2);
+    assert(height >= 2);
+
+    uint16_t width_out = width >> 1;
+    uint16_t height_out = height >> 1;
+
+    // RGGB pixel layout for each 2x2 square
+    for (size_t y = 0; y < height_out; y++) {
+        size_t y_in = y * 2;
+        for (size_t x = 0; x < width_out; x++) {
+            size_t x_in = x * 2;
+            rgb[(width_out*y + x)*3 + 0] = bayer[width*y_in + x_in];
+            rgb[(width_out*y + x)*3 + 1] = (bayer[width*y_in + x_in + 1] + bayer[width*(y_in + 1) + x_in]) >> 1;
+            rgb[(width_out*y + x)*3 + 2] = bayer[width*(y_in + 1) + x_in + 1];
+        }
+    }
+}
