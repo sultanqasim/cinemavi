@@ -5,7 +5,10 @@
 // multiply gamma corrector by this to have deep blacks
 static inline double black_crush(double x)
 {
-    return 1.0 - pow(0.01, 50*x);
+    if (x < 0.05)
+        return 1.0 - pow(0.01, 50*x);
+    else
+        return 1.0;
 }
 
 // generate lut for gamma encoding a linear space image
