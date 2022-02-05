@@ -39,11 +39,15 @@ int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
     cmat_d2f(&cmat, &cmat_f);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
 
-    // Step 3: Noise reduction
-    noise_reduction_rgb2(rgbf_1, rgbf_0, width, height, params->nr_lum, params->nr_chrom);
+    // Step 3: Noise reduction and convert back to integer
+    if (params->nr_lum <= 1. && params->nr_chrom <= 1.) {
+        colour_f2i(rgbf_1, rgb12, width, height, 4095);
+    } else {
+        noise_reduction_rgb2(rgbf_1, rgbf_0, width, height, params->nr_lum, params->nr_chrom);
+        colour_f2i(rgbf_0, rgb12, width, height, 4095);
+    }
 
-    // Step 4: Convert back to integer and gamma encode
-    colour_f2i(rgbf_0, rgb12, width, height, 4095);
+    // Step 4: Gamma encode
     gamma_gen_lut(glut, 12);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
