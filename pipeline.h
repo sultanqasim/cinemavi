@@ -17,8 +17,8 @@ typedef struct {
     double gamma;
 } ImagePipelineParams;
 
-int pipeline_process_image(const uint16_t *bayer12p, uint8_t *rgb8, uint16_t width,
-        uint16_t height, ImagePipelineParams *params);
+int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
+        uint16_t height, const ImagePipelineParams *params);
 
 #ifdef __cplusplus
 }

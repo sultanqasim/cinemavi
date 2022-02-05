@@ -5,6 +5,7 @@
 #include <arv.h>
 
 #include "dng.h"
+#include "pipeline.h"
 
 static void cinemavi_camera_configure(ArvCamera *camera, double shutter_us, double gain_db, GError **error)
 {
@@ -50,15 +51,35 @@ int main (int argc, char **argv)
         buffer = arv_camera_acquisition(camera, 0, &error);
 
         if (ARV_IS_BUFFER(buffer)) {
+            unsigned int width = arv_buffer_get_image_width(buffer);
+            unsigned int height = arv_buffer_get_image_height(buffer);
+
             // Display some informations about the retrieved buffer
-            printf("Acquired %d×%d buffer\n",
-                    arv_buffer_get_image_width(buffer),
-                    arv_buffer_get_image_height(buffer));
+            printf("Acquired %d×%d buffer\n", width, height);
 
             if (argc > 1) {
-                int dng_stat = arv_buffer_to_dng(buffer, argv[1], camera_model);
-                if (dng_stat != 0) printf("Error %d writing DNG.\n", dng_stat);
-                else printf("DNG written to: %s\n", argv[1]);
+                size_t imsz;
+                const uint8_t *imbuf = (const uint8_t *) arv_buffer_get_data(buffer, &imsz);
+                uint8_t *rgb8 = (uint8_t *)malloc(width * height * 3);
+                if (rgb8 != NULL) {
+                    ImagePipelineParams params = {
+                        .warmth = 0.0,
+                        .tint = 0.0,
+                        .hue = 0.0,
+                        .sat = 1.0,
+                        .nr_lum = 250.0,
+                        .nr_chrom = 500.0,
+                        .gamma = 2.2
+                    };
+                    printf("Processing image...\n");
+                    pipeline_process_image(imbuf, rgb8, width, height, &params);
+                    printf("Image processed.\n");
+
+                    int tiff_stat = rgb8_to_tiff(rgb8, width, height, argv[1]);
+                    if (tiff_stat != 0) printf("Error %d writing TIFF.\n", tiff_stat);
+                    else printf("TIFF written to: %s\n", argv[1]);
+                }
+                free(rgb8);
             }
 
             // Destroy the buffer
