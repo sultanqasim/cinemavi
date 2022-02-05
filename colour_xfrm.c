@@ -18,21 +18,11 @@ void cmat_d2f(const ColourMatrix *cmat, ColourMatrix_f *cmat_f)
 
 /* generate a colour correction matrix
  *
- * warmth:
- *      valid range -1.0 to 1.0
- *      negative values cause red channel to be multiplied by (1 + warmth)
- *      positive values cause blue channel to be multiplied by (1 - warmth)
- * tint:
- *      valid range -1.0 to 1.0
- *      negative values cause red and blue to be multiplied by (1 + tint)
- *      positive values cause green to be multiplied by (1 - tiny)
- *
- * hue:
- *      hue adjustment in radians
- *
- * sat:
- *      saturation is multiplied by this value
- *      1.0 means no change to saturation
+ * warmth:  valid range -1.0 to 1.0 (cool to warm)
+ * tint:    valid range -1.0 to 1.0 (green to magenta)
+ * hue:     hue adjustment in radians
+ * sat:     saturation is multiplied by this value
+ *          1.0 means no change to saturation
  */
 void colour_matrix(ColourMatrix *cmat, double warmth, double tint, double hue, double sat)
 {
@@ -42,18 +32,18 @@ void colour_matrix(ColourMatrix *cmat, double warmth, double tint, double hue, d
     else if (warmth < -1.0) warmth = -1.0;
 
     memset(&warmth_mat, 0, sizeof(ColourMatrix));
-    warmth_mat.m[0] = warmth < 0 ? 1 + warmth : 1;
+    warmth_mat.m[0] = 1 + warmth;
     warmth_mat.m[4] = 1;
-    warmth_mat.m[8] = warmth > 0 ? 1 - warmth : 1;
+    warmth_mat.m[8] = 1 - warmth;
 
 
     if (tint > 1.0) tint = 1.0;
     if (tint < -1.0) tint = -1.0;
 
     memset(&tint_mat, 0, sizeof(ColourMatrix));
-    tint_mat.m[0] = tint < 0 ? 1 + tint : 1;
-    tint_mat.m[4] = tint > 0 ? 1 - tint : 1;
-    tint_mat.m[8] = tint < 0 ? 1 + tint : 1;
+    tint_mat.m[0] = 1 + 0.5*tint;
+    tint_mat.m[4] = 1 - tint;
+    tint_mat.m[8] = 1 + 0.5*tint;
 
     const double desat = 1 - sat;
     sat_mat.m[0] = 1;

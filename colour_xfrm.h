@@ -38,21 +38,11 @@ static inline void pixel_xfrm(const ColourPixel *pix_in, ColourPixel *pix_out,
 
 /* generate a colour correction matrix
  *
- * warmth:
- *      valid range -1.0 to 1.0
- *      negative values cause red channel to be multiplied by (1 + warmth)
- *      positive values cause blue channel to be multiplied by (1 - warmth)
- * tint:
- *      valid range -1.0 to 1.0
- *      negative values cause red and blue to be multiplied by (1 + tint)
- *      positive values cause green to be multiplied by (1 - tiny)
- *
- * hue:
- *      hue adjustment in radians
- *
- * sat:
- *      saturation is multiplied by this value
- *      1.0 means no change to saturation
+ * warmth:  valid range -1.0 to 1.0 (cool to warm)
+ * tint:    valid range -1.0 to 1.0 (green to magenta)
+ * hue:     hue adjustment in radians
+ * sat:     saturation is multiplied by this value
+ *          1.0 means no change to saturation
  */
 void colour_matrix(ColourMatrix *cmat, double warmth, double tint, double hue, double sat);
 
