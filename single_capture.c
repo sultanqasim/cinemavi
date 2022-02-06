@@ -26,7 +26,11 @@ static void cinemavi_camera_configure(ArvCamera *camera, double shutter_us, doub
     if (!(*error)) arv_camera_set_gain(camera, gain_db, error);
 
     // White balance (make it neutral)
+    if (!(*error)) arv_camera_set_string(camera, "BalanceWhiteAuto", "Continuous", error);
     if (!(*error)) arv_camera_set_string(camera, "BalanceWhiteAuto", "Off", error);
+    if (!(*error)) arv_camera_set_string(camera, "BalanceRatioSelector", "Red", error);
+    if (!(*error)) arv_camera_set_float(camera, "BalanceRatio", 1.0, error);
+    if (!(*error)) arv_camera_set_string(camera, "BalanceRatioSelector", "Blue", error);
     if (!(*error)) arv_camera_set_float(camera, "BalanceRatio", 1.0, error);
 }
 
