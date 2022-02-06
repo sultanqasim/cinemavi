@@ -18,7 +18,7 @@ endif
 
 all: single_capture
 
-single_capture: single_capture.o dng.opp colour_xfrm.o debayer.o convolve.o noise_reduction.o gamma.o pipeline.o
+single_capture: single_capture.o dng.opp colour_xfrm.o debayer.o convolve.o noise_reduction.o gamma.o pipeline.o cmraw.o
 	$(CPP) $(LFLAGS) $^ -o $@
 
 %.o: %.c

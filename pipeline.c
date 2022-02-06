@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
+#include "cmraw.h"
 #include "pipeline.h"
 #include "debayer.h"
 #include "colour_xfrm.h"
@@ -22,7 +23,7 @@ int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
         goto cleanup;
     }
 
-    if (width >= 32768 || (width & 1) || height >= 32768 || (height & 1)) {
+    if (width > CM_MAX_WIDTH || (width & 1) || height > CM_MAX_HEIGHT || (height & 1)) {
         status = -EINVAL;
         goto cleanup;
     }
