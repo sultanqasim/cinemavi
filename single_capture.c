@@ -6,6 +6,7 @@
 #include <arv.h>
 
 #include "dng.h"
+#include "cmraw.h"
 #include "pipeline.h"
 
 static void cinemavi_camera_configure(ArvCamera *camera, double shutter_us, double gain_db, GError **error)
@@ -46,7 +47,7 @@ static void cinemavi_generate_tiff(ArvBuffer *buffer, char *fname)
     unsigned int width = arv_buffer_get_image_width(buffer);
     unsigned int height = arv_buffer_get_image_height(buffer);
     size_t imsz;
-    const uint8_t *imbuf = (const uint8_t *) arv_buffer_get_data(buffer, &imsz);
+    const uint8_t *imbuf = (const uint8_t *)arv_buffer_get_data(buffer, &imsz);
     uint8_t *rgb8 = (uint8_t *)malloc(width * height * 3);
     if (rgb8 != NULL) {
         ImagePipelineParams params = {
@@ -68,6 +69,24 @@ static void cinemavi_generate_tiff(ArvBuffer *buffer, char *fname)
         else printf("TIFF written to: %s\n", fname);
     }
     free(rgb8);
+}
+
+static void cinemavi_generate_cmr(ArvBuffer *buffer, char *fname)
+{
+    CMCaptureInfo cinfo;
+    cm_capture_info_init(&cinfo);
+    cinfo.pixel_fmt = CM_PIXEL_FMT_BAYER_RG12P;
+    cinfo.width = arv_buffer_get_image_width(buffer);
+    cinfo.height = arv_buffer_get_image_height(buffer);
+
+    size_t imsz;
+    const uint8_t *imbuf = (const uint8_t *)arv_buffer_get_data(buffer, &imsz);
+
+    int cmr_stat = cmraw_save(imbuf, &cinfo, fname);
+    if (cmr_stat != 0)
+        printf("Error %d writing CMR.\n", cmr_stat);
+    else
+        printf("CMR written to: %s\n", fname);
 }
 
 static bool endswith(const char *s, const char *suffix)
@@ -112,6 +131,8 @@ int main (int argc, char **argv)
                     cinemavi_generate_dng(buffer, argv[1]);
                 else if (endswith(argv[1], ".tiff"))
                     cinemavi_generate_tiff(buffer, argv[1]);
+                else if (endswith(argv[1], ".cmr"))
+                    cinemavi_generate_cmr(buffer, argv[1]);
                 else
                     printf("Unknown output file type.\n");
             }

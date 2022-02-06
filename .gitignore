@@ -3,4 +3,5 @@ single_capture
 *.opp
 *.dng
 *.tiff
+*.cmr
 .DS_Store
