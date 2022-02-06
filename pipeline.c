@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "cmraw.h"
 #include "pipeline.h"
@@ -8,10 +9,12 @@
 #include "noise_reduction.h"
 #include "gamma.h"
 
-int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
-        uint16_t height, const ImagePipelineParams *params)
+int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
+        const ImagePipelineParams *params)
 {
     int status = 0;
+    uint16_t width = cinfo->width;
+    uint16_t height = cinfo->height;
     uint16_t *bayer12 = (uint16_t *)malloc(width * height * sizeof(uint16_t));
     uint16_t *rgb12 = (uint16_t *)malloc(width * height * 3 * sizeof(uint16_t));
     float *rgbf_0 = (float *)malloc(width * height * 3 * sizeof(float));
@@ -29,7 +32,14 @@ int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
     }
 
     // Step 1: Unpack and debayer the image
-    unpack12_16(bayer12, bayer12p, width * height, false);
+    if (cinfo->pixel_fmt == CM_PIXEL_FMT_BAYER_RG12P)
+        unpack12_16(bayer12, raw, width * height, false);
+    else if (cinfo->pixel_fmt == CM_PIXEL_FMT_BAYER_RG12)
+        memcpy(bayer12, raw, width * height * sizeof(uint16_t));
+    else {
+        status = -EINVAL;
+        goto cleanup;
+    }
     debayer33(bayer12, rgb12, width, height);
 
     // Step 2: Convert to float and colour correct
@@ -49,7 +59,7 @@ int pipeline_process_image(const void *bayer12p, uint8_t *rgb8, uint16_t width,
     }
 
     // Step 4: Gamma encode
-    if (params->gamma <= 0.001) {
+    if (params->gamma < 0.001) {
         gamma_gen_lut(glut, 12);    // linear
     } else { // filmic
         gamma_gen_lut_filmic(glut, 12, params->gamma, params->shadow);
@@ -68,10 +78,12 @@ cleanup:
 
 // use fast 2x2 binned debayering and skip noise reduction
 // output image is half height and half width
-int pipeline_process_image_bin22(const void *bayer12p, uint8_t *rgb8, uint16_t width,
-        uint16_t height, const ImagePipelineParams *params)
+int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
+        const ImagePipelineParams *params)
 {
     int status = 0;
+    uint16_t width = cinfo->width;
+    uint16_t height = cinfo->height;
     uint16_t width_out = width >> 1;
     uint16_t height_out = height >> 1;
     uint16_t *bayer12 = (uint16_t *)malloc(width * height * sizeof(uint16_t));
@@ -91,7 +103,14 @@ int pipeline_process_image_bin22(const void *bayer12p, uint8_t *rgb8, uint16_t w
     }
 
     // Step 1: Unpack and debayer the image
-    unpack12_16(bayer12, bayer12p, width * height, false);
+    if (cinfo->pixel_fmt == CM_PIXEL_FMT_BAYER_RG12P)
+        unpack12_16(bayer12, raw, width * height, false);
+    else if (cinfo->pixel_fmt == CM_PIXEL_FMT_BAYER_RG12)
+        memcpy(bayer12, raw, width * height * sizeof(uint16_t));
+    else {
+        status = -EINVAL;
+        goto cleanup;
+    }
     debayer22_binned(bayer12, rgb12, width, height);
 
     // Step 2: Convert to float, colour correct, convert back to int
@@ -104,7 +123,7 @@ int pipeline_process_image_bin22(const void *bayer12p, uint8_t *rgb8, uint16_t w
     colour_f2i(rgbf_1, rgb12, width_out, height_out, 4095);
 
     // Step 3: Gamma encode
-    if (params->gamma <= 0.001) {
+    if (params->gamma < 0.001) {
         gamma_gen_lut(glut, 12);    // linear
     } else {
         gamma_gen_lut_filmic(glut, 12, params->gamma, params->shadow);

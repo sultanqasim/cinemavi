@@ -50,7 +50,7 @@ typedef struct {
     float pixel_pitch_um;
     char reserved3[32];
     char camera_make[32];
-    char camer_model[32];
+    char camera_model[32];
     char capture_software[32];
 } CMCaptureInfo;
 #pragma pack(pop)

@@ -35,22 +35,53 @@ static void cinemavi_camera_configure(ArvCamera *camera, double shutter_us, doub
     if (!(*error)) arv_camera_set_float(camera, "BalanceRatio", 1.0, error);
 }
 
-static void cinemavi_generate_dng(ArvBuffer *buffer, char *fname)
+static const void * cinemavi_prepare_header(ArvBuffer *buffer, CMCaptureInfo *cinfo,
+        const char *cam_make, const char *cam_model, float shutter, float gain)
 {
-    int dng_stat = arv_buffer_to_dng(buffer, fname, "");
+    size_t imsz;
+    const void *imbuf = (const void *)arv_buffer_get_data(buffer, &imsz);
+
+    cm_capture_info_init(cinfo);
+
+    if (arv_buffer_get_payload_type(buffer) != ARV_BUFFER_PAYLOAD_TYPE_IMAGE)
+        return NULL;
+
+    cinfo->width = arv_buffer_get_image_width(buffer);
+    cinfo->height = arv_buffer_get_image_height(buffer);
+
+    ArvPixelFormat pfmt = arv_buffer_get_image_pixel_format(buffer);
+    if (pfmt == ARV_PIXEL_FORMAT_BAYER_RG_12P)
+        cinfo->pixel_fmt = CM_PIXEL_FMT_BAYER_RG12P;
+    else if (pfmt == ARV_PIXEL_FORMAT_BAYER_RG_12)
+        cinfo->pixel_fmt = CM_PIXEL_FMT_BAYER_RG12;
+    else
+        return NULL;
+
+    snprintf(cinfo->camera_make, sizeof(cinfo->camera_make), "%s", cam_make);
+    snprintf(cinfo->camera_model, sizeof(cinfo->camera_model), "%s", cam_model);
+
+    cinfo->shutter_us = shutter;
+    cinfo->gain_dB = gain;
+
+    return imbuf;
+}
+
+static void cinemavi_generate_dng(const void *raw, const CMCaptureInfo *cinfo,
+        const char *fname)
+{
+    int dng_stat = bayer_rg12p_to_dng(raw, cinfo->width, cinfo->height, fname,
+            cinfo->camera_model);
     if (dng_stat != 0) printf("Error %d writing DNG.\n", dng_stat);
     else printf("DNG written to: %s\n", fname);
 }
 
-static void cinemavi_generate_tiff(ArvBuffer *buffer, char *fname)
+static void cinemavi_generate_tiff(const void *raw, const CMCaptureInfo *cinfo,
+        const char *fname)
 {
-    unsigned int width = arv_buffer_get_image_width(buffer);
-    unsigned int height = arv_buffer_get_image_height(buffer);
-    size_t imsz;
-    const uint8_t *imbuf = (const uint8_t *)arv_buffer_get_data(buffer, &imsz);
-    uint8_t *rgb8 = (uint8_t *)malloc(width * height * 3);
+    uint8_t *rgb8 = (uint8_t *)malloc(cinfo->width * cinfo->height * 3);
     if (rgb8 != NULL) {
         ImagePipelineParams params = {
+            .exposure = 1.0,
             .warmth = 0.0,
             .tint = 0.15,
             .hue = 0.0,
@@ -61,28 +92,20 @@ static void cinemavi_generate_tiff(ArvBuffer *buffer, char *fname)
             .shadow = 1.0
         };
         printf("Processing image...\n");
-        pipeline_process_image(imbuf, rgb8, width, height, &params);
+        pipeline_process_image(raw, rgb8, cinfo, &params);
         printf("Image processed.\n");
 
-        int tiff_stat = rgb8_to_tiff(rgb8, width, height, fname);
+        int tiff_stat = rgb8_to_tiff(rgb8, cinfo->width, cinfo->height, fname);
         if (tiff_stat != 0) printf("Error %d writing TIFF.\n", tiff_stat);
         else printf("TIFF written to: %s\n", fname);
     }
     free(rgb8);
 }
 
-static void cinemavi_generate_cmr(ArvBuffer *buffer, char *fname)
+static void cinemavi_generate_cmr(const void *raw, const CMCaptureInfo *cinfo,
+        const char *fname)
 {
-    CMCaptureInfo cinfo;
-    cm_capture_info_init(&cinfo);
-    cinfo.pixel_fmt = CM_PIXEL_FMT_BAYER_RG12P;
-    cinfo.width = arv_buffer_get_image_width(buffer);
-    cinfo.height = arv_buffer_get_image_height(buffer);
-
-    size_t imsz;
-    const uint8_t *imbuf = (const uint8_t *)arv_buffer_get_data(buffer, &imsz);
-
-    int cmr_stat = cmraw_save(imbuf, &cinfo, fname);
+    int cmr_stat = cmraw_save(raw, cinfo, fname);
     if (cmr_stat != 0)
         printf("Error %d writing CMR.\n", cmr_stat);
     else
@@ -110,11 +133,14 @@ int main (int argc, char **argv)
     camera = arv_camera_new(NULL, &error);
 
     if (ARV_IS_CAMERA(camera)) {
+        const char *camera_make = arv_camera_get_vendor_name(camera, NULL);
         const char *camera_model = arv_camera_get_model_name(camera, NULL);
-        printf("Found camera '%s'\n", camera_model);
+        printf("Found camera '%s %s'\n", camera_make, camera_model);
 
         // Set configuration
-        cinemavi_camera_configure(camera, 30000, 10, &error);
+        const double shutter_us = 30000;
+        const double gain_dB = 10;
+        cinemavi_camera_configure(camera, shutter_us, gain_dB, &error);
         if (error) goto err;
 
         // Acquire a single buffer
@@ -127,12 +153,15 @@ int main (int argc, char **argv)
             printf("Acquired %d×%d buffer\n", width, height);
 
             if (argc > 1) {
+                CMCaptureInfo cinfo;
+                const void *raw = cinemavi_prepare_header(buffer, &cinfo,
+                        camera_make, camera_model, shutter_us, gain_dB);
                 if (endswith(argv[1], ".dng"))
-                    cinemavi_generate_dng(buffer, argv[1]);
+                    cinemavi_generate_dng(raw, &cinfo, argv[1]);
                 else if (endswith(argv[1], ".tiff"))
-                    cinemavi_generate_tiff(buffer, argv[1]);
+                    cinemavi_generate_tiff(raw, &cinfo, argv[1]);
                 else if (endswith(argv[1], ".cmr"))
-                    cinemavi_generate_cmr(buffer, argv[1]);
+                    cinemavi_generate_cmr(raw, &cinfo, argv[1]);
                 else
                     printf("Unknown output file type.\n");
             }
