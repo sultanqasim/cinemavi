@@ -52,8 +52,8 @@ static void cinemavi_generate_tiff(ArvBuffer *buffer, char *fname)
             .sat = 1.0,
             .nr_lum = 250.0,
             .nr_chrom = 500.0,
-            .gamma = 0.4,
-            .shadow = 0.8
+            .gamma = 0.25,
+            .shadow = 1.0
         };
         printf("Processing image...\n");
         pipeline_process_image(imbuf, rgb8, width, height, &params);
