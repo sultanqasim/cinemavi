@@ -18,24 +18,27 @@ void cmat_d2f(const ColourMatrix *cmat, ColourMatrix_f *cmat_f)
 
 /* generate a colour correction matrix
  *
+ * exposure:RGB components are multiplied by this value
+ *          1.0 means no change to exposure
  * warmth:  valid range -1.0 to 1.0 (cool to warm)
  * tint:    valid range -1.0 to 1.0 (green to magenta)
  * hue:     hue adjustment in radians
  * sat:     saturation is multiplied by this value
  *          1.0 means no change to saturation
  */
-void colour_matrix(ColourMatrix *cmat, double warmth, double tint, double hue, double sat)
+void colour_matrix(ColourMatrix *cmat, double exposure, double warmth, double tint,
+        double hue, double sat)
 {
     ColourMatrix warmth_mat, tint_mat, sat_mat, hue_mat, work1_mat, work2_mat;
 
+    if (exposure < 0.0) exposure = 0.0;
     if (warmth > 1.0) warmth = 1.0;
     else if (warmth < -1.0) warmth = -1.0;
 
     memset(&warmth_mat, 0, sizeof(ColourMatrix));
-    warmth_mat.m[0] = 1 + warmth;
-    warmth_mat.m[4] = 1;
-    warmth_mat.m[8] = 1 - warmth;
-
+    warmth_mat.m[0] = (1 + warmth) * exposure;
+    warmth_mat.m[4] = exposure;
+    warmth_mat.m[8] = (1 - warmth) * exposure;
 
     if (tint > 1.0) tint = 1.0;
     if (tint < -1.0) tint = -1.0;

@@ -38,20 +38,24 @@ static inline void pixel_xfrm(const ColourPixel *pix_in, ColourPixel *pix_out,
 
 /* generate a colour correction matrix
  *
+ * exposure:RGB components are multiplied by this value
+ *          1.0 means no change to exposure
  * warmth:  valid range -1.0 to 1.0 (cool to warm)
  * tint:    valid range -1.0 to 1.0 (green to magenta)
  * hue:     hue adjustment in radians
  * sat:     saturation is multiplied by this value
  *          1.0 means no change to saturation
  */
-void colour_matrix(ColourMatrix *cmat, double warmth, double tint, double hue, double sat);
+void colour_matrix(ColourMatrix *cmat, double exposure, double warmth, double tint,
+        double hue, double sat);
 
 // convert 16-bit integer to floating point image
 void colour_i2f(const uint16_t *img_in, float *img_out, uint16_t width, uint16_t height);
 
 // convert floating point image to 16-bit integer
 // if bound != 0, also ensure 0 <= pixel_value <= bound
-void colour_f2i(const float *img_in, uint16_t *img_out, uint16_t width, uint16_t height, uint16_t bound);
+void colour_f2i(const float *img_in, uint16_t *img_out, uint16_t width, uint16_t height,
+        uint16_t bound);
 
 // apply a colour matrix transformation to every pixel in the image
 void colour_xfrm(const float *img_in, float *img_out, uint16_t width, uint16_t height,
