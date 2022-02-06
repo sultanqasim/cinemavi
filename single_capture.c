@@ -54,8 +54,8 @@ static void cinemavi_generate_tiff(ArvBuffer *buffer, char *fname)
             .tint = 0.15,
             .hue = 0.0,
             .sat = 1.0,
-            .nr_lum = 250.0,
-            .nr_chrom = 500.0,
+            .nr_lum = 150.0,
+            .nr_chrom = 600.0,
             .gamma = 0.25,
             .shadow = 1.0
         };
@@ -95,7 +95,7 @@ int main (int argc, char **argv)
         printf("Found camera '%s'\n", camera_model);
 
         // Set configuration
-        cinemavi_camera_configure(camera, 50000, 5, &error);
+        cinemavi_camera_configure(camera, 30000, 10, &error);
         if (error) goto err;
 
         // Acquire a single buffer
