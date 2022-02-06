@@ -1,4 +1,5 @@
 single_capture
+cmraw_process
 *.o
 *.opp
 *.dng
