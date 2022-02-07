@@ -30,6 +30,7 @@ void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth)
 
 // apply cubic base curve before gamma encoding
 // shadow must be in range [0.001, 2.999]
+// suggested coefficient: shadow=0.3
 void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double shadow)
 {
     /* Cubic equation of the form f(x) = Ax^3 + Bx^2 + Cx
@@ -98,14 +99,19 @@ void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
     // bound shadow so that shadow * g(1) < 1
     if (shadow >= -ln_k) shadow = ln_k * -0.999;
 
+    // shadow must be positive
+    if (shadow < 0) shadow = 0;
+
+    // bound gamma to be vaguely reasonable
+    if (gamma < 0.001) gamma = 0.001;
+    if (gamma > 5) gamma = 5;
+
     double a = 1 + shadow/ln_k;
     double b = -1 / ((1-k) * ln_k);
     double b_shadow = b * shadow;
 
     assert(bit_depth >= 8);
     assert(bit_depth <= 16);
-    assert(gamma > 0);
-    assert(shadow >= 0);
 
     for (int i = 0; i < 1 << bit_depth; i++) {
         double x = i * i_scale;

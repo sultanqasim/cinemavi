@@ -60,11 +60,12 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     }
 
     // Step 4: Gamma encode
-    if (params->gamma < 0.001) {
-        gamma_gen_lut(glut, 12);    // linear
-    } else { // filmic
+    if (params->lut_mode == CMLUT_FILMIC)
         gamma_gen_lut_filmic(glut, 12, params->gamma, params->shadow);
-    }
+    else if (params->lut_mode == CMLUT_CUBIC)
+        gamma_gen_lut_cubic(glut, 12, params->shadow);
+    else    // linear
+        gamma_gen_lut(glut, 12);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
@@ -125,11 +126,12 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     colour_f2i(rgbf_1, rgb12, width_out, height_out, 4095);
 
     // Step 3: Gamma encode
-    if (params->gamma < 0.001) {
-        gamma_gen_lut(glut, 12);    // linear
-    } else {
+    if (params->lut_mode == CMLUT_FILMIC)
         gamma_gen_lut_filmic(glut, 12, params->gamma, params->shadow);
-    }
+    else if (params->lut_mode == CMLUT_CUBIC)
+        gamma_gen_lut_cubic(glut, 12, params->shadow);
+    else    // linear
+        gamma_gen_lut(glut, 12);
     gamma_encode(rgb12, rgb8, width_out, height_out, glut);
 
 cleanup:

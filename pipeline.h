@@ -7,6 +7,12 @@ extern "C" {
 
 #include <stdint.h>
 
+typedef enum {
+    CMLUT_LINEAR,
+    CMLUT_FILMIC,
+    CMLUT_CUBIC
+} CMLUTMode;
+
 typedef struct {
     double exposure;
     double warmth;
@@ -17,6 +23,7 @@ typedef struct {
     double nr_chrom;
     double gamma;
     double shadow;
+    CMLUTMode lut_mode;
 } ImagePipelineParams;
 
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,

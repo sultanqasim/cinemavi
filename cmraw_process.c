@@ -21,8 +21,9 @@ static void cinemavi_generate_tiff(const void *raw, const CMRawHeader *cmrh,
             .sat = 1.0,
             .nr_lum = 150.0,
             .nr_chrom = 600.0,
-            .gamma = 0.3,
-            .shadow = 1.0
+            .gamma = 0.0,
+            .shadow = 0.3,
+            .lut_mode = CMLUT_CUBIC
         };
         printf("Processing image...\n");
         pipeline_process_image(raw, rgb8, &cmrh->cinfo, &params);
