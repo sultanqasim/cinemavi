@@ -87,8 +87,8 @@ static void cinemavi_generate_tiff(const void *raw, const CMRawHeader *cmrh,
     if (rgb8 != NULL) {
         ImagePipelineParams params = {
             .exposure = 1.0,
-            .warmth = 0.0,
-            .tint = 0.15,
+            .warmth = -0.2,
+            .tint = 0.3,
             .hue = 0.0,
             .sat = 1.0,
             .nr_lum = 150.0,
@@ -144,7 +144,7 @@ int main (int argc, char **argv)
 
         // Set configuration
         const double shutter_us = 30000;
-        const double gain_dB = 10;
+        const double gain_dB = 5;
         cinemavi_camera_configure(camera, shutter_us, gain_dB, &error);
         if (error) goto err;
 
