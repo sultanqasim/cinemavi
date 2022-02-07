@@ -9,11 +9,11 @@
 #define CM_MAGIC 0x69564D43
 
 // Zero the struct, set the magic and timestamp
-void cm_capture_info_init(CMCaptureInfo *cinfo)
+void cm_raw_header_init(CMRawHeader *cmrh)
 {
-    memset(cinfo, 0, sizeof(CMCaptureInfo));
-    cinfo->magic = CM_MAGIC;
-    cinfo->ts_epoch = time(NULL);
+    memset(cmrh, 0, sizeof(CMRawHeader));
+    cmrh->magic = CM_MAGIC;
+    cmrh->cinfo.ts_epoch = time(NULL);
 }
 
 static size_t get_raw_len(CMPixelFormat fmt, uint16_t width, uint16_t height)
@@ -40,18 +40,18 @@ static size_t get_raw_len(CMPixelFormat fmt, uint16_t width, uint16_t height)
         return 0;
 }
 
-int cmraw_save(const void *raw, const CMCaptureInfo *cinfo, const char *fname)
+int cmraw_save(const void *raw, const CMRawHeader *cmrh, const char *fname)
 {
-    if (raw == NULL || cinfo == NULL || fname == NULL)
+    if (raw == NULL || cmrh == NULL || fname == NULL)
         return -EINVAL;
 
-    if (cinfo->magic != CM_MAGIC)
+    if (cmrh->magic != CM_MAGIC)
         return -EINVAL;
 
-    if (cinfo->width > CM_MAX_WIDTH | cinfo->height > CM_MAX_HEIGHT)
+    if (cmrh->cinfo.width > CM_MAX_WIDTH | cmrh->cinfo.height > CM_MAX_HEIGHT)
         return -EOVERFLOW;
 
-    size_t raw_len = get_raw_len(cinfo->pixel_fmt, cinfo->width, cinfo->height);
+    size_t raw_len = get_raw_len(cmrh->cinfo.pixel_fmt, cmrh->cinfo.width, cmrh->cinfo.height);
     if (raw_len == 0)
         return -EINVAL;
 
@@ -60,7 +60,7 @@ int cmraw_save(const void *raw, const CMCaptureInfo *cinfo, const char *fname)
         return -errno;
 
     int status = 0;
-    if (fwrite(cinfo, sizeof(CMCaptureInfo), 1, f) != 1)
+    if (fwrite(cmrh, sizeof(CMRawHeader), 1, f) != 1)
         status = -EIO;
 
     if (!status && fwrite(raw, raw_len, 1, f) != 1)
@@ -71,10 +71,10 @@ int cmraw_save(const void *raw, const CMCaptureInfo *cinfo, const char *fname)
     return status;
 }
 
-// sets the raw pointer, caller must free (with C stdlib free) when done
-int cmraw_load(void **raw, CMCaptureInfo *cinfo, const char *fname)
+// sets the raw pointer, caller must free it (with C stdlib free) when done
+int cmraw_load(void **raw, CMRawHeader *cmrh, const char *fname)
 {
-    if (raw == NULL || cinfo == NULL || fname == NULL)
+    if (raw == NULL || cmrh == NULL || fname == NULL)
         return -EINVAL;
 
     FILE *f = fopen(fname, "rb");
@@ -82,18 +82,18 @@ int cmraw_load(void **raw, CMCaptureInfo *cinfo, const char *fname)
         return -errno;
 
     int status = 0;
-    if (fread(cinfo, sizeof(CMCaptureInfo), 1, f) != 1)
+    if (fread(cmrh, sizeof(CMRawHeader), 1, f) != 1)
         status = -EIO;
 
     size_t raw_len = 0;
 
     if (!status) {
-        if (cinfo->magic != CM_MAGIC)
+        if (cmrh->magic != CM_MAGIC)
             status = -EINVAL;
-        else if (cinfo->width > CM_MAX_WIDTH | cinfo->height > CM_MAX_HEIGHT)
+        else if (cmrh->cinfo.width > CM_MAX_WIDTH | cmrh->cinfo.height > CM_MAX_HEIGHT)
             status = -EOVERFLOW;
         else
-            raw_len = get_raw_len(cinfo->pixel_fmt, cinfo->width, cinfo->height);
+            raw_len = get_raw_len(cmrh->cinfo.pixel_fmt, cmrh->cinfo.width, cmrh->cinfo.height);
     }
 
     if (!status && raw_len == 0)

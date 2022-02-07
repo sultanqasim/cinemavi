@@ -8,10 +8,10 @@
 #include "pipeline.h"
 #include "dng.h"
 
-static void cinemavi_generate_tiff(const void *raw, const CMCaptureInfo *cinfo,
+static void cinemavi_generate_tiff(const void *raw, const CMRawHeader *cmrh,
         const char *fname)
 {
-    uint8_t *rgb8 = (uint8_t *)malloc(cinfo->width * cinfo->height * 3);
+    uint8_t *rgb8 = (uint8_t *)malloc(cmrh->cinfo.width * cmrh->cinfo.height * 3);
     if (rgb8 != NULL) {
         ImagePipelineParams params = {
             .exposure = 1.0,
@@ -25,10 +25,10 @@ static void cinemavi_generate_tiff(const void *raw, const CMCaptureInfo *cinfo,
             .shadow = 1.0
         };
         printf("Processing image...\n");
-        pipeline_process_image(raw, rgb8, cinfo, &params);
+        pipeline_process_image(raw, rgb8, &cmrh->cinfo, &params);
         printf("Image processed.\n");
 
-        int tiff_stat = rgb8_to_tiff(rgb8, cinfo->width, cinfo->height, fname);
+        int tiff_stat = rgb8_to_tiff(rgb8, cmrh->cinfo.width, cmrh->cinfo.height, fname);
         if (tiff_stat != 0) printf("Error %d writing TIFF.\n", tiff_stat);
         else printf("TIFF written to: %s\n", fname);
     }
@@ -62,14 +62,14 @@ int main (int argc, char **argv)
         return -1;
     }
 
-    CMCaptureInfo cinfo;
+    CMRawHeader cmrh;
     void *raw = NULL;
 
-    int status = cmraw_load(&raw, &cinfo, argv[1]);
+    int status = cmraw_load(&raw, &cmrh, argv[1]);
     if (status != 0) {
         printf("Error %d loading RAW file.\n", status);
     } else {
-        cinemavi_generate_tiff(raw, &cinfo, argv[2]);
+        cinemavi_generate_tiff(raw, &cmrh, argv[2]);
     }
 
     free(raw);
