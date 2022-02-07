@@ -29,22 +29,39 @@ void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth)
 }
 
 // apply cubic base curve before gamma encoding
-// suggested coefficients: a=-1.7, b=2.6, c=0.1
-void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth,
-        double a, double b, double c)
+// shadow must be in range [0.001, 2.999]
+void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double shadow)
 {
+    /* Cubic equation of the form f(x) = Ax^3 + Bx^2 + Cx
+     * C is the shadow parameter
+     *
+     * The roots of the derivative of the cubic must be before 0 and after 1.
+     * For a filmic type desaturation and compression of highlights, we choose
+     * to place the higher root at 1.01. For f(1) to equal 1, A + B + C = 1.
+     * We now have two constraints, we can solve for A and B.
+     *
+     * We can derive the following equations to calculate suitable A and B values
+     * given a particular C in range (0, 3):
+     *
+     * A = (C - 1.98) / 1.02
+     * B = 1 - A - C
+     */
     double G = 8.0 / bit_depth;
     double i_scale = 1.0 / (1 << bit_depth);
 
     assert(bit_depth >= 8);
     assert(bit_depth <= 16);
-    assert(a + b + c < 1.0000001);
+
+    // constrain to numerically valid values to ensure 0 < f(x) < 1 in x range (0, 1)
+    if (shadow > 2.999) shadow = 2.999;
+    if (shadow < 0.001) shadow = 0.001;
+
+    double A = (shadow - 1.98) / 1.02;
+    double B = 1 - A - shadow;
 
     for (int i = 0; i < 1 << bit_depth; i++) {
-        // base curve function: y = f(x) = a*x^3 + b*x^2 + c*x
-        // f(x) must be in [0, 1] for x in [0, 1]
         double x = i * i_scale;
-        double y = a*x*x*x + b*x*x + c*x;
+        double y = A*x*x*x + B*x*x + shadow*x;
         lut[i] = 255.999 * pow(y, G) * black_crush(y);
     }
 }
