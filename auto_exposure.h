@@ -1,0 +1,41 @@
+#ifndef AUTO_EXPOSURE_H
+#define AUTO_EXPOSURE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdint.h>
+
+/* Returns exposure multiplication factor to make the 70th percentile value of the brightest
+ * channel equal to percentile70 argument. However, the returned factor would be reduced
+ * if needed to ensure the 98th percentile of the brightest channel <= percentile98;
+ */
+double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
+        uint16_t percentile70, uint16_t percentile98);
+
+typedef struct {
+    double shutter_us;
+    double gain_dB;
+} ExposureParams;
+
+typedef struct {
+    double shutter_min;      // shortest supported shutter time (us)
+    double shutter_max;      // longest supported shutter time (us)
+    double shutter_targ_low; // no improvement in sharpness from further reducing shutter time
+    double shutter_targ_high;// image likely to be blurry above this shutter time
+    double gain_min;         // highest supported gain (dB)
+    double gain_max;         // lowest supported gain (dB)
+    double gain_targ_low;    // noise is not noticeable below this gain
+    double gain_targ_high;   // noise gets obtrusive above this gain
+} ExposureLimits;
+
+// calculate new shutter speed and gain given supplied constraints
+void calculate_exposure(const ExposureParams *e_old, ExposureParams *e_new,
+        const ExposureLimits *limits, double change_factor);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // AUTO_EXPOSURE_H
