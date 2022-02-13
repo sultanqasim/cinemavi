@@ -21,7 +21,7 @@ all: single_capture cmraw_process
 
 LIB_OBJS = dng.opp colour_xfrm.o debayer.o convolve.o noise_reduction.o gamma.o pipeline.o cmraw.o auto_exposure.o
 
-single_capture: single_capture.o $(LIB_OBJS)
+single_capture: single_capture.o cm_camera_helper.o $(LIB_OBJS)
 	$(CPP) $(LFLAGS) $(LFLAGS_ARV) $^ -o $@
 
 cmraw_process: cmraw_process.o $(LIB_OBJS)
