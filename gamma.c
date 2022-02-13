@@ -120,6 +120,61 @@ void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
     }
 }
 
+// numerically estimate k for (1 - k^x)/(1 - k) to get desired shadow slope at x=0+
+static double hdr_shadow_k(double shadow)
+{
+    /* shadow = ln(1/k) / (1 - k)
+     * k = W(-s * e^-s) / s where W is Lambert W function
+     * We can't easily calculate this exactly, so numerical approach is needed
+     */
+
+    // likewise, base curve becomes unreasonable below shadow=0.001 (blacks crushed)
+    if (shadow < 0.001) shadow = 0.001;
+
+    // division by zero at shadow=1 (since k=1), so avoid it
+    if (shadow > 0.999 && shadow < 1.001) shadow = 0.999;
+
+    /* define a new variable y to make solving easier
+     * let k = e^-y
+     * shadow = y / (1 - e^-y)
+     *
+     * For shadow > 1, an excellent approximation is:
+     * y = shadow - 0.42^(shadow - 1)
+     *
+     * For shadow < 1, a good approximation is:
+     * y = 1.95 * ln(shadow) * shadow^0.1
+     */
+
+    double y;
+    if (shadow > 1)
+        y = shadow - pow(0.42, shadow - 1.0);
+    else
+        y = 1.95 * log(shadow) * pow(shadow, 0.1);
+
+    return exp(-y);
+}
+
+// apply the base curve x^gamma * (1 - k^x)/(1 - k) before gamma encoding
+// shadow slope is approximately 0.01^gamma * ln(1/k) / (1 - k)
+// allows extreme shadow boosting while preserving highlights
+// suggested values: gamma=0.1, shadow=16
+void gamma_gen_lut_hdr(uint8_t *lut, uint8_t bit_depth, double gamma, double shadow)
+{
+    // bound gamma for reasonableness
+    if (gamma < 0.001) gamma = 0.001;
+    else if (gamma > 0.99) gamma = 0.99;
+
+    double k = hdr_shadow_k(shadow / pow(0.01, gamma));
+    double G = 1.0 / (1.0 - k);
+    double i_scale = 1.0 / (1 << bit_depth);
+
+    for (int i = 0; i < 1 << bit_depth; i++) {
+        double x = i * i_scale;
+        double y = G * (1.0 - pow(k, x)) * pow(x, gamma);
+        lut[i] = 255.999 * pow(y, G) * black_crush(y);
+    }
+}
+
 // assumes length of lut >= highest value in img_in
 void gamma_encode(const uint16_t *img_in, uint8_t *img_out, uint16_t width, uint16_t height,
         const uint8_t *lut)

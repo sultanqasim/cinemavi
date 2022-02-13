@@ -10,7 +10,8 @@ extern "C" {
 typedef enum {
     CMLUT_LINEAR,
     CMLUT_FILMIC,
-    CMLUT_CUBIC
+    CMLUT_CUBIC,
+    CMLUT_HDR
 } CMLUTMode;
 
 typedef struct {

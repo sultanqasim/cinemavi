@@ -22,6 +22,11 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double shadow);
 void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
         double gamma, double shadow);
 
+// apply the base curve x^gamma * (1 - k^x)/(1 - k) before gamma encoding
+// shadow slope is approximately 0.01^gamma * ln(1/k) / (1 - k)
+// allows extreme shadow boosting while preserving highlights
+void gamma_gen_lut_hdr(uint8_t *lut, uint8_t bit_depth, double gamma, double shadow);
+
 // assumes length of lut >= highest value in img_in
 void gamma_encode(const uint16_t *img_in, uint8_t *img_out, uint16_t width, uint16_t height,
         const uint8_t *lut);
