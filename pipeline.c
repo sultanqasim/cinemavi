@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "cmraw.h"
 #include "pipeline.h"
@@ -68,11 +69,11 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     double gamma = params->gamma;
     double shadow = params->shadow;
     if (lut_mode == CMLUT_HDR_AUTO) {
-        double boost = auto_hdr_shadow(rgb12, width, height, 200, 1500);
+        double boost = auto_hdr_shadow(rgb12, width, height, 360, 1800);
         if (boost > 2) {
             lut_mode = CMLUT_HDR;
-            gamma = 0.1;
             shadow = boost > 32 ? 32 : boost;
+            gamma = 0.3 - pow(shadow, 1./3)*0.06;
         } else {
             lut_mode = CMLUT_CUBIC;
         }
@@ -151,11 +152,11 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     double gamma = params->gamma;
     double shadow = params->shadow;
     if (lut_mode == CMLUT_HDR_AUTO) {
-        double boost = auto_hdr_shadow(rgb12, width, height, 200, 1500);
+        double boost = auto_hdr_shadow(rgb12, width, height, 360, 1800);
         if (boost > 2) {
             lut_mode = CMLUT_HDR;
-            gamma = 0.1;
             shadow = boost > 32 ? 32 : boost;
+            gamma = 0.3 - pow(shadow, 1./3)*0.06;
         } else {
             lut_mode = CMLUT_CUBIC;
         }
