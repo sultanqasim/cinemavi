@@ -15,6 +15,12 @@ typedef enum {
 } CMLUTMode;
 
 typedef struct {
+    double warmth;
+    double tint;
+    double hue;
+} CMCameraCalibration;
+
+typedef struct {
     double exposure;
     double warmth;
     double tint;
@@ -28,12 +34,12 @@ typedef struct {
 } ImagePipelineParams;
 
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params);
+        const ImagePipelineParams *params, const CMCameraCalibration *calib);
 
 // use fast 2x2 binned debayering and skip noise reduction
 // output image is half height and half width
 int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params);
+        const ImagePipelineParams *params, const CMCameraCalibration *calib);
 
 #ifdef __cplusplus
 }

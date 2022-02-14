@@ -18,10 +18,9 @@ void cmat_d2f(const ColourMatrix *cmat, ColourMatrix_f *cmat_f)
 
 /* generate a colour correction matrix
  *
- * exposure:RGB components are multiplied by this value
- *          1.0 means no change to exposure
- * warmth:  valid range -1.0 to 1.0 (cool to warm)
- * tint:    valid range -1.0 to 1.0 (green to magenta)
+ * exposure:change in stops
+ * warmth:  change in stops, negative is cool, positive is warm
+ * tint:    change in stops, negative is green, positive is magenta
  * hue:     hue adjustment in radians
  * sat:     saturation is multiplied by this value
  *          1.0 means no change to saturation
@@ -29,25 +28,31 @@ void cmat_d2f(const ColourMatrix *cmat, ColourMatrix_f *cmat_f)
 void colour_matrix(ColourMatrix *cmat, double exposure, double warmth, double tint,
         double hue, double sat)
 {
-    ColourMatrix warmth_mat, tint_mat, sat_mat, hue_mat, work1_mat, work2_mat;
+    ColourMatrix wb_mat, sat_mat, hue_mat, work_mat;
 
-    if (exposure < 0.0) exposure = 0.0;
-    if (warmth > 1.0) warmth = 1.0;
-    else if (warmth < -1.0) warmth = -1.0;
+    double exp_factor = pow(2, exposure);
 
-    memset(&warmth_mat, 0, sizeof(ColourMatrix));
-    warmth_mat.m[0] = (1 + warmth) * exposure;
-    warmth_mat.m[4] = exposure;
-    warmth_mat.m[8] = (1 - warmth) * exposure;
+    double red_factor = 1;
+    double blue_factor = 1;
+    if (warmth >= 0)
+        red_factor = pow(2, warmth);
+    else
+        blue_factor = pow(2, -warmth);
 
-    if (tint > 1.0) tint = 1.0;
-    if (tint < -1.0) tint = -1.0;
+    double redblue_factor = 1;
+    double green_factor = 1;
+    if (tint >= 0)
+        redblue_factor = pow(2, tint);
+    else
+        green_factor = pow(2, -tint);
 
-    memset(&tint_mat, 0, sizeof(ColourMatrix));
-    tint_mat.m[0] = 1 + 0.5*tint;
-    tint_mat.m[4] = 1 - tint;
-    tint_mat.m[8] = 1 + 0.5*tint;
+    // white balance and exposure
+    memset(&wb_mat, 0, sizeof(ColourMatrix));
+    wb_mat.m[0] = red_factor * redblue_factor * exp_factor;
+    wb_mat.m[4] = green_factor * exp_factor;
+    wb_mat.m[8] = blue_factor * redblue_factor * exp_factor;
 
+    // saturation
     const double desat = 1 - sat;
     sat_mat.m[0] = 1;
     sat_mat.m[1] = desat;
@@ -78,9 +83,8 @@ void colour_matrix(ColourMatrix *cmat, double exposure, double warmth, double ti
     hue_mat.m[8] = a;
 
     // first adjust white balance in camera RGB space, then rotate hue, then saturation
-    colour_matmult33(&work1_mat, &warmth_mat, &tint_mat);
-    colour_matmult33(&work2_mat, &work1_mat, &hue_mat);
-    colour_matmult33(cmat, &work2_mat, &sat_mat);
+    colour_matmult33(&work_mat, &wb_mat, &hue_mat);
+    colour_matmult33(cmat, &work_mat, &sat_mat);
 }
 
 // convert 16-bit integer to floating point image

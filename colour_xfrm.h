@@ -38,10 +38,9 @@ static inline void pixel_xfrm(const ColourPixel *pix_in, ColourPixel *pix_out,
 
 /* generate a colour correction matrix
  *
- * exposure:RGB components are multiplied by this value
- *          1.0 means no change to exposure
- * warmth:  valid range -1.0 to 1.0 (cool to warm)
- * tint:    valid range -1.0 to 1.0 (green to magenta)
+ * exposure:change in stops
+ * warmth:  change in stops, negative is cool, positive is warm
+ * tint:    change in stops, negative is green, positive is magenta
  * hue:     hue adjustment in radians
  * sat:     saturation is multiplied by this value
  *          1.0 means no change to saturation

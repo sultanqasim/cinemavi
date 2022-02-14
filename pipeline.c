@@ -29,7 +29,7 @@ static void pipeline_gen_lut(uint8_t *glut, const ImagePipelineParams *params)
 }
 
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params)
+        const ImagePipelineParams *params, const CMCameraCalibration *calib)
 {
     int status = 0;
     uint16_t width = cinfo->width;
@@ -64,8 +64,8 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     // Step 2: Convert to float and colour correct
     colour_i2f(rgb12, rgbf_0, width, height);
     ColourMatrix cmat;
-    colour_matrix(&cmat, params->exposure, params->warmth, params->tint,
-            params->hue, params->sat);
+    colour_matrix(&cmat, params->exposure, params->warmth + calib->warmth,
+            params->tint + calib->tint, params->hue + calib->hue, params->sat);
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat, &cmat_f);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
@@ -95,7 +95,7 @@ cleanup:
 // use fast 2x2 binned debayering and skip noise reduction
 // output image is half height and half width
 int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params)
+        const ImagePipelineParams *params, const CMCameraCalibration *calib)
 {
     int status = 0;
     uint16_t width = cinfo->width;
@@ -132,8 +132,8 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     // Step 2: Convert to float, colour correct, convert back to int
     colour_i2f(rgb12, rgbf_0, width_out, height_out);
     ColourMatrix cmat;
-    colour_matrix(&cmat, params->exposure, params->warmth, params->tint,
-            params->hue, params->sat);
+    colour_matrix(&cmat, params->exposure, params->warmth + calib->warmth,
+            params->tint + calib->tint, params->hue + calib->hue, params->sat);
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat, &cmat_f);
     colour_xfrm(rgbf_0, rgbf_1, width_out, height_out, &cmat_f);

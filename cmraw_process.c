@@ -13,20 +13,25 @@ static void cinemavi_generate_tiff(const void *raw, const CMRawHeader *cmrh,
 {
     uint8_t *rgb8 = (uint8_t *)malloc(cmrh->cinfo.width * cmrh->cinfo.height * 3);
     if (rgb8 != NULL) {
+        CMCameraCalibration calib = {
+            .warmth = -0.5,
+            .tint = 0.4,
+            .hue = 0.0
+        };
         ImagePipelineParams params = {
-            .exposure = 1.0,
-            .warmth = -0.2,
-            .tint = 0.3,
+            .exposure = 0.0,
+            .warmth = 0.0,
+            .tint = 0.0,
             .hue = 0.0,
             .sat = 1.0,
             .nr_lum = 150.0,
             .nr_chrom = 600.0,
             .gamma = 0.0,
-            .shadow = 0.3,
+            .shadow = 0.4,
             .lut_mode = CMLUT_CUBIC
         };
         printf("Processing image...\n");
-        pipeline_process_image(raw, rgb8, &cmrh->cinfo, &params);
+        pipeline_process_image(raw, rgb8, &cmrh->cinfo, &params, &calib);
         printf("Image processed.\n");
 
         int tiff_stat = rgb8_to_tiff(rgb8, cmrh->cinfo.width, cmrh->cinfo.height, fname);
