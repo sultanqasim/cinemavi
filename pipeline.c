@@ -30,6 +30,21 @@ static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double gamma, do
     }
 }
 
+static void pipeline_auto_hdr(uint16_t *rgb12, uint16_t width, uint16_t height,
+        CMLUTMode *lut_mode, double *gamma, double *shadow)
+{
+    if (*lut_mode == CMLUT_HDR_AUTO) {
+        double boost = auto_hdr_shadow(rgb12, width, height, 360, 1800);
+        if (boost > 2) {
+            *lut_mode = CMLUT_HDR;
+            *shadow = boost > 32 ? 32 : boost;
+            *gamma = 0.3 - pow(*shadow, 1./3)*0.06;
+        } else {
+            *lut_mode = CMLUT_CUBIC;
+        }
+    }
+}
+
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
         const ImagePipelineParams *params, const CMCameraCalibration *calib)
 {
@@ -68,16 +83,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     CMLUTMode lut_mode = params->lut_mode;
     double gamma = params->gamma;
     double shadow = params->shadow;
-    if (lut_mode == CMLUT_HDR_AUTO) {
-        double boost = auto_hdr_shadow(rgb12, width, height, 360, 1800);
-        if (boost > 2) {
-            lut_mode = CMLUT_HDR;
-            shadow = boost > 32 ? 32 : boost;
-            gamma = 0.3 - pow(shadow, 1./3)*0.06;
-        } else {
-            lut_mode = CMLUT_CUBIC;
-        }
-    }
+    pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow);
 
     // Step 2: Convert to float and colour correct
     colour_i2f(rgb12, rgbf_0, width, height);
@@ -151,16 +157,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     CMLUTMode lut_mode = params->lut_mode;
     double gamma = params->gamma;
     double shadow = params->shadow;
-    if (lut_mode == CMLUT_HDR_AUTO) {
-        double boost = auto_hdr_shadow(rgb12, width, height, 360, 1800);
-        if (boost > 2) {
-            lut_mode = CMLUT_HDR;
-            shadow = boost > 32 ? 32 : boost;
-            gamma = 0.3 - pow(shadow, 1./3)*0.06;
-        } else {
-            lut_mode = CMLUT_CUBIC;
-        }
-    }
+    pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow);
 
     // Step 2: Convert to float, colour correct, convert back to int
     colour_i2f(rgb12, rgbf_0, width_out, height_out);
