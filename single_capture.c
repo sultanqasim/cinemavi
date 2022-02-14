@@ -120,7 +120,7 @@ static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limit
         debayer22_binned(bayer12, img_rgb, width, height);
         free(bayer12);
 
-        change_factor = auto_exposure(img_rgb, rgw, rgh, 1600, 3600);
+        change_factor = auto_exposure(img_rgb, rgw, rgh, 1600, 3800);
         free(img_rgb);
 
         calculate_exposure(&params, &params2, limits, change_factor);

@@ -7,12 +7,16 @@ extern "C" {
 
 #include <stdint.h>
 
-/* Returns exposure multiplication factor to make the 70th percentile value of the brightest
- * channel equal to percentile70 argument. However, the returned factor would be reduced
- * if needed to ensure the 98th percentile of the brightest channel <= percentile98;
+// find the 10th, 75th, and 99.5th percentile exposure values of the brightest channels
+int exposure_percentiles(const uint16_t *img_rgb, uint16_t width, uint16_t height,
+        uint16_t *percentile10, uint16_t *percentile75, uint16_t *percentile99);
+
+/* Returns exposure multiplication factor to make the 75th percentile value of the brightest
+ * channel equal to percentile75 argument. However, the returned factor would be reduced
+ * if needed to ensure the 99.5th percentile of the brightest channel <= percentile99;
  */
 double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t percentile70, uint16_t percentile98);
+        uint16_t percentile75, uint16_t percentile99);
 
 typedef struct {
     double shutter_us;
