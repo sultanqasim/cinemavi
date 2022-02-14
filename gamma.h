@@ -13,8 +13,9 @@ extern "C" {
 void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth);
 
 // apply cubic base curve before gamma encoding
+// gamma is the slope at the white end
 // shadow is the slope at the black end
-void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double shadow);
+void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double shadow);
 
 // apply a filmic base curve before gamma encoding
 // shadow is the slope at the black end

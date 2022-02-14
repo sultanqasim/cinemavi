@@ -22,7 +22,7 @@ static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double gamma, do
         gamma_gen_lut_filmic(glut, 12, gamma, shadow);
         break;
     case CMLUT_CUBIC:
-        gamma_gen_lut_cubic(glut, 12, shadow);
+        gamma_gen_lut_cubic(glut, 12, gamma, shadow);
         break;
     case CMLUT_HDR:
         gamma_gen_lut_hdr(glut, 12, gamma, shadow);

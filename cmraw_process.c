@@ -26,7 +26,7 @@ static void cinemavi_generate_tiff(const void *raw, const CMRawHeader *cmrh,
             .sat = 1.0,
             .nr_lum = 150.0,
             .nr_chrom = 600.0,
-            .gamma = 0.0,
+            .gamma = 0.05,
             .shadow = 0.4,
             .lut_mode = CMLUT_HDR_AUTO
         };

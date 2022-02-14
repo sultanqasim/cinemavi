@@ -29,23 +29,32 @@ void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth)
 }
 
 // apply cubic base curve before gamma encoding
-// shadow must be in range [0.001, 2.999]
-// suggested coefficient: shadow=0.3
-void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double shadow)
+// suggested coefficient: shadow=0.5, gamma=0.05
+void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double shadow)
 {
-    /* Cubic equation of the form f(x) = Ax^3 + Bx^2 + Cx
-     * C is the shadow parameter
+    /* Cubic equation of the form:
+     *  f(x) = Ax^3 + Bx^2 + Cx + D
+     * Its derivative is:
+     *  f'(x) = 3Ax^2 + 2Bx + C
      *
-     * The roots of the derivative of the cubic must be before 0 and after 1.
-     * For a filmic type desaturation and compression of highlights, we choose
-     * to place the higher root at 1.01. For f(1) to equal 1, A + B + C = 1.
-     * We now have two constraints, we can solve for A and B.
+     * Our requirements are:
+     *  f(0) = 0
+     *  f(1) = 1
+     *  f'(0) = shadow
+     *  f'(1) = gamma
      *
-     * We can derive the following equations to calculate suitable A and B values
-     * given a particular C in range (0, 3):
+     * Substituting in our requirements into the equations, we get:
+     *  A = gamma + shadow - 2
+     *  B = 3 - gamma - 2*shadow
+     *  C = shadow
+     *  D = 0
      *
-     * A = (C - 1.98) / 1.02
-     * B = 1 - A - C
+     * To ensure f(x) is in [0, 1] for x in [0,1]:
+     *  0 <= shadow <= 3
+     *  0 <= gamma <= [an upper bound]
+     *
+     * While gamma > 1 is mathematically acceptable in some scnearios, it doesn't
+     * make much sense photographically, so we will bound gamma <= 1;
      */
     double G = 8.0 / bit_depth;
     double i_scale = 1.0 / (1 << bit_depth);
@@ -53,12 +62,14 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double shadow)
     assert(bit_depth >= 8);
     assert(bit_depth <= 16);
 
-    // constrain to numerically valid values to ensure 0 < f(x) < 1 in x range (0, 1)
-    if (shadow > 2.999) shadow = 2.999;
-    if (shadow < 0.001) shadow = 0.001;
+    // numerical constraints
+    if (shadow < 0) shadow = 0;
+    if (shadow > 3) shadow = 3;
+    if (gamma < 0) gamma = 0;
+    if (gamma > 1) gamma = 1;
 
-    double A = (shadow - 1.98) / 1.02;
-    double B = 1 - A - shadow;
+    double A = gamma + shadow - 2;
+    double B = 3 - gamma - 2*shadow;
 
     for (int i = 0; i < 1 << bit_depth; i++) {
         double x = i * i_scale;
