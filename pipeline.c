@@ -8,22 +8,23 @@
 #include "colour_xfrm.h"
 #include "noise_reduction.h"
 #include "gamma.h"
+#include "auto_exposure.h"
 
-static void pipeline_gen_lut(uint8_t *glut, const ImagePipelineParams *params)
+static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double gamma, double shadow)
 {
-    switch (params->lut_mode) {
+    switch (lut_mode) {
     case CMLUT_LINEAR:
     default:
         gamma_gen_lut(glut, 12);
         break;
     case CMLUT_FILMIC:
-        gamma_gen_lut_filmic(glut, 12, params->gamma, params->shadow);
+        gamma_gen_lut_filmic(glut, 12, gamma, shadow);
         break;
     case CMLUT_CUBIC:
-        gamma_gen_lut_cubic(glut, 12, params->shadow);
+        gamma_gen_lut_cubic(glut, 12, shadow);
         break;
     case CMLUT_HDR:
-        gamma_gen_lut_hdr(glut, 12, params->gamma, params->shadow);
+        gamma_gen_lut_hdr(glut, 12, gamma, shadow);
         break;
     }
 }
@@ -61,6 +62,22 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     }
     debayer33(bayer12, rgb12, width, height);
 
+
+    // Step 1.5: Compute auto HDR params if requested
+    CMLUTMode lut_mode = params->lut_mode;
+    double gamma = params->gamma;
+    double shadow = params->shadow;
+    if (lut_mode == CMLUT_HDR_AUTO) {
+        double boost = auto_hdr_shadow(rgb12, width, height, 200, 1500);
+        if (boost > 2) {
+            lut_mode = CMLUT_HDR;
+            gamma = 0.1;
+            shadow = boost > 32 ? 32 : boost;
+        } else {
+            lut_mode = CMLUT_CUBIC;
+        }
+    }
+
     // Step 2: Convert to float and colour correct
     colour_i2f(rgb12, rgbf_0, width, height);
     ColourMatrix cmat;
@@ -79,7 +96,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     }
 
     // Step 4: Gamma encode
-    pipeline_gen_lut(glut, params);
+    pipeline_gen_lut(glut, lut_mode, gamma, shadow);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
@@ -129,6 +146,21 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     }
     debayer22_binned(bayer12, rgb12, width, height);
 
+    // Step 1.5: Compute auto HDR params if requested
+    CMLUTMode lut_mode = params->lut_mode;
+    double gamma = params->gamma;
+    double shadow = params->shadow;
+    if (lut_mode == CMLUT_HDR_AUTO) {
+        double boost = auto_hdr_shadow(rgb12, width, height, 200, 1500);
+        if (boost > 2) {
+            lut_mode = CMLUT_HDR;
+            gamma = 0.1;
+            shadow = boost > 32 ? 32 : boost;
+        } else {
+            lut_mode = CMLUT_CUBIC;
+        }
+    }
+
     // Step 2: Convert to float, colour correct, convert back to int
     colour_i2f(rgb12, rgbf_0, width_out, height_out);
     ColourMatrix cmat;
@@ -140,7 +172,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     colour_f2i(rgbf_1, rgb12, width_out, height_out, 4095);
 
     // Step 3: Gamma encode
-    pipeline_gen_lut(glut, params);
+    pipeline_gen_lut(glut, lut_mode, gamma, shadow);
     gamma_encode(rgb12, rgb8, width_out, height_out, glut);
 
 cleanup:

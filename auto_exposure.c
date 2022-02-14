@@ -65,6 +65,25 @@ int exposure_percentiles(const uint16_t *img_rgb, uint16_t width, uint16_t heigh
     return 0;
 }
 
+// Returns shadow slope needed to boost shadows and midtones to target
+double auto_hdr_shadow(const uint16_t *img_rgb, uint16_t width, uint16_t height,
+        uint16_t percentile10, uint16_t percentile75)
+{
+    uint16_t p10, p75, p99;
+    if (exposure_percentiles(img_rgb, width, height, &p10, &p75, &p99))
+        return 1.0;
+
+    // now calculate the exposure change factors for shadows and midtones
+    double gain10 = (double)percentile10 / p10;
+    double gain75 = (double)percentile75 / p75;
+
+    // even if shadows are dark, try not to over-brighten midtones
+    if (gain10/gain75 > 2)
+        return gain75 * 2;
+
+    return gain10 > gain75 ? gain10 : gain75;
+}
+
 /* Returns exposure multiplication factor to make the 75th percentile value of the brightest
  * channel equal to percentile75 argument. However, the returned factor would be reduced
  * if needed to ensure the 99.5th percentile of the brightest channel <= percentile99;

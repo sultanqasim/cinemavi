@@ -11,6 +11,10 @@ extern "C" {
 int exposure_percentiles(const uint16_t *img_rgb, uint16_t width, uint16_t height,
         uint16_t *percentile10, uint16_t *percentile75, uint16_t *percentile99);
 
+// Returns shadow slope needed to boost shadows and midtones to target
+double auto_hdr_shadow(const uint16_t *img_rgb, uint16_t width, uint16_t height,
+        uint16_t percentile10, uint16_t percentile75);
+
 /* Returns exposure multiplication factor to make the 75th percentile value of the brightest
  * channel equal to percentile75 argument. However, the returned factor would be reduced
  * if needed to ensure the 99.5th percentile of the brightest channel <= percentile99;
