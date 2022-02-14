@@ -16,7 +16,7 @@ int exposure_percentiles(const uint16_t *img_rgb, uint16_t width, uint16_t heigh
  * if needed to ensure the 99.5th percentile of the brightest channel <= percentile99;
  */
 double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t percentile75, uint16_t percentile99);
+        uint16_t percentile75, uint16_t percentile99, uint16_t white);
 
 typedef struct {
     double shutter_us;

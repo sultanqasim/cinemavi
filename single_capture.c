@@ -68,10 +68,11 @@ static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limit
     ExposureParams params2;
     double change_factor = 0.0;
     int ret = 0;
+    int iterations = 0;
 
     cinemavi_camera_configure(camera, params.shutter_us, params.gain_dB, &error);
 
-    while (change_factor < 0.95 || change_factor > 1.05) {
+    while (iterations < 10 && (change_factor < 0.95 || change_factor > 1.05)) {
         if (error) {
             ret = -EIO;
             break;
@@ -120,12 +121,13 @@ static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limit
         debayer22_binned(bayer12, img_rgb, width, height);
         free(bayer12);
 
-        change_factor = auto_exposure(img_rgb, rgw, rgh, 1600, 3800);
+        change_factor = auto_exposure(img_rgb, rgw, rgh, 1600, 3750, 4090);
         free(img_rgb);
 
         calculate_exposure(&params, &params2, limits, change_factor);
         params = params2;
         cinemavi_camera_configure_exposure(camera, params.shutter_us, params.gain_dB, &error);
+        iterations++;
     }
 
     *shutter = params.shutter_us;
