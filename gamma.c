@@ -155,16 +155,16 @@ static double hdr_shadow_k(double shadow)
 }
 
 // apply the base curve x^gamma * (1 - k^x)/(1 - k) before gamma encoding
-// shadow slope is approximately 0.01^gamma * ln(1/k) / (1 - k)
+// shadow slope is approximately 0.03^gamma * ln(1/k) / (1 - k)
 // allows extreme shadow boosting while preserving highlights
-// suggested values: gamma=0.1, shadow=16
+// suggested values: gamma=0.1, shadow=[2 to 64] depending on dynamic range
 void gamma_gen_lut_hdr(uint8_t *lut, uint8_t bit_depth, double gamma, double shadow)
 {
     // bound gamma for reasonableness
     if (gamma < 0.001) gamma = 0.001;
     else if (gamma > 0.99) gamma = 0.99;
 
-    double k = hdr_shadow_k(shadow / pow(0.01, gamma));
+    double k = hdr_shadow_k(shadow / pow(0.03, gamma));
     double G = 1.0 / (1.0 - k);
     double i_scale = 1.0 / (1 << bit_depth);
 
