@@ -12,7 +12,8 @@ typedef enum {
     CMLUT_FILMIC,
     CMLUT_CUBIC,
     CMLUT_HDR,
-    CMLUT_HDR_AUTO
+    CMLUT_HDR_AUTO,
+    CMLUT_HDR_CUBIC
 } CMLUTMode;
 
 typedef struct {

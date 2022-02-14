@@ -27,6 +27,9 @@ static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double gamma, do
     case CMLUT_HDR:
         gamma_gen_lut_hdr(glut, 12, gamma, shadow);
         break;
+    case CMLUT_HDR_CUBIC:
+        gamma_gen_lut_hdr_cubic(glut, 12, gamma, shadow, 0.4);
+        break;
     }
 }
 

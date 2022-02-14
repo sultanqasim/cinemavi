@@ -29,7 +29,7 @@ void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth)
 }
 
 // apply cubic base curve before gamma encoding
-// suggested coefficient: shadow=0.5, gamma=0.05
+// suggested coefficients: shadow=0.4, gamma=0.05
 void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double shadow)
 {
     /* Cubic equation of the form:
@@ -182,6 +182,80 @@ void gamma_gen_lut_hdr(uint8_t *lut, uint8_t bit_depth, double gamma, double sha
     for (int i = 0; i < 1 << bit_depth; i++) {
         double x = i * i_scale;
         double y = G * (1.0 - pow(k, x)) * pow(x, gamma);
+        lut[i] = 255.999 * pow(y, G) * black_crush(y);
+    }
+}
+
+// compressed cubic curve with Reinhard tail for shadow boosting while preserving highlights
+// gamma is slope at white end
+// shadow is how much cubic is compressed to boost shadows
+// black is slope at black end before compression of cubic
+//
+// suggested coefficients:
+// gamma = 0.25 - 0.05*ln(shadow)
+// shadow = 1 to 64
+// black = 0.4 for every setting
+void gamma_gen_lut_hdr_cubic(uint8_t *lut, uint8_t bit_depth, double gamma,
+        double shadow, double black)
+{
+    /* Let's call our HDR curve h(x)
+     *
+     * Both the cubic and Reinhard portions meet at x = 1/shadow
+     * Cubic portion:
+     *  h(x) = Ax^3 + Bx^2 + Cx for x in [0, 1/shadow]
+     * Reinhard portion:
+     *  h(x) = (1 + r)x / (x + r) for x in [1/shadow, 1]
+     *
+     * Deriviative of Reninhard is:
+     *  R'(x) = r(r + 1) / (r + x)^2
+     * Solving for r when R'(1) = gamma:
+     *  r = gamma / (1 - gamma)
+     *
+     * Let Q = h(1/shadow) = (1 + r) * (1/shadow) / (1 + 1/shadow)
+     *
+     * Let k = black, g = R'(1/shadow) / (Q * shadow)
+     * We construct a cubic f(x) from (0,0) to (1,1) using the math in gamma_gen_lut_cubic:
+     *  f(x) = A'x^3 + B'x^2 + C'x
+     *  A' = g + k - 2
+     *  B' = 3 - g - 2*k
+     *  C' = k
+     *
+     * We now compress the cubic f(x) to only occupy the shadow region:
+     *  A = A' * Q * shadow^3
+     *  B = B' * Q * shadow^2
+     *  C = C' * Q * shadow
+     */
+
+    assert(bit_depth >= 8);
+    assert(bit_depth <= 16);
+
+    double G = 8.0 / bit_depth;
+    double i_scale = 1.0 / (1 << bit_depth);
+
+    // numerical constraints
+    if (gamma < 0.001) gamma = 0.001;
+    if (gamma > 0.999) gamma = 0.999;
+    if (shadow < 1) shadow = 1;
+    if (black < 0) black = 0;
+    if (black > 3) black = 3;
+
+    double inv_shadow = 1.0 / shadow;
+    double r = gamma / (1 - gamma);
+    double r_1 = r + 1;
+    double Q = r_1 * inv_shadow / (r + inv_shadow);
+    double Rprime_IS = r * r_1 / ((r+inv_shadow) * (r+inv_shadow));
+    double g = Rprime_IS / (shadow * Q);
+    double A = Q * shadow*shadow*shadow * (g + black - 2);
+    double B = Q * shadow*shadow * (3 - g - 2*black);
+    double C = Q * shadow * black;
+
+    for (int i = 0; i < 1 << bit_depth; i++) {
+        double x = i * i_scale;
+        double y;
+        if (x < inv_shadow)
+            y = A*x*x*x + B*x*x + C*x;
+        else
+            y = r_1 * x / (x + r);
         lut[i] = 255.999 * pow(y, G) * black_crush(y);
     }
 }
