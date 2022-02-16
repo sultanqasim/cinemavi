@@ -10,7 +10,7 @@ static inline uint8_t gamma_encode_srgb(double x)
         encoded = 12.92 * x;
     else
         encoded = 1.055 * pow(x, 1/2.4) - 0.055;
-    return encoded * 255;
+    return encoded * 255.1;
 }
 
 static inline double i_to_x(uint16_t i, double i_scale, double black_point)
