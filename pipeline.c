@@ -142,7 +142,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
         goto cleanup;
     }
 
-    if (width >= 32768 || (width & 1) || height >= 32768 || (height & 1)) {
+    if (width > CM_MAX_WIDTH || (width & 1) || height > CM_MAX_HEIGHT || (height & 1)) {
         status = -EINVAL;
         goto cleanup;
     }
