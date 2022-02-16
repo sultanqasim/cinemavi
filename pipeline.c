@@ -107,7 +107,8 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     }
 
     // Step 4: Gamma encode
-    pipeline_gen_lut(glut, lut_mode, 0.012, gamma, shadow);
+    double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
+    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
@@ -174,7 +175,8 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     colour_f2i(rgbf_1, rgb12, width_out, height_out, 4095);
 
     // Step 3: Gamma encode
-    pipeline_gen_lut(glut, lut_mode, 0.012, gamma, shadow);
+    double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
+    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow);
     gamma_encode(rgb12, rgb8, width_out, height_out, glut);
 
 cleanup:

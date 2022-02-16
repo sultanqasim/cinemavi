@@ -22,6 +22,10 @@ double auto_hdr_shadow(const uint16_t *img_rgb, uint16_t width, uint16_t height,
 double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
         uint16_t percentile75, uint16_t percentile99, uint16_t white);
 
+// Returns darkest pixel value or 2% of white_val, whichever is greater
+uint16_t auto_black_point(const uint16_t *img_rgb, uint16_t width, uint16_t height,
+        uint16_t white_val);
+
 typedef struct {
     double shutter_us;
     double gain_dB;
