@@ -2,13 +2,19 @@
 #include <assert.h>
 #include "gamma.h"
 
-// multiply gamma corrector by this to have deep blacks
-static inline double black_crush(double x)
+// x is a luminance value between 0 and 1
+static inline uint8_t gamma_encode_srgb(double x)
 {
-    if (x < 0.05)
-        return 1.0 - pow(0.01, 50*x);
+    const double black_point = 0.013;
+    x = (x - black_point) / (1 - black_point);
+    if (x < 0) x= 0;
+
+    double encoded;
+    if (x <= 0.0031308)
+        encoded = 12.92 * x;
     else
-        return 1.0;
+        encoded = 1.055 * pow(x, 1/2.4) - 0.055;
+    return encoded * 255;
 }
 
 // generate lut for gamma encoding a linear space image
@@ -16,7 +22,6 @@ static inline double black_crush(double x)
 // length of lut should be 1 << bit_depth
 void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth)
 {
-    double G = 8.0 / bit_depth;
     double i_scale = 1.0 / (1 << bit_depth);
 
     assert(bit_depth >= 8);
@@ -24,12 +29,12 @@ void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth)
 
     for (int i = 0; i < 1 << bit_depth; i++) {
         double x = i * i_scale;
-        lut[i] = 255.999 * pow(x, G) * black_crush(x);
+        lut[i] = gamma_encode_srgb(x);
     }
 }
 
 // apply cubic base curve before gamma encoding
-// suggested coefficients: shadow=0.4, gamma=0.05
+// suggested coefficients: shadow=0.3, gamma=0.2
 void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double shadow)
 {
     /* Cubic equation of the form:
@@ -56,7 +61,6 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double s
      * While gamma > 1 is mathematically acceptable in some scnearios, it doesn't
      * make much sense photographically, so we will bound gamma <= 1;
      */
-    double G = 8.0 / bit_depth;
     double i_scale = 1.0 / (1 << bit_depth);
 
     assert(bit_depth >= 8);
@@ -74,7 +78,7 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double s
     for (int i = 0; i < 1 << bit_depth; i++) {
         double x = i * i_scale;
         double y = A*x*x*x + B*x*x + shadow*x;
-        lut[i] = 255.999 * pow(y, G) * black_crush(y);
+        lut[i] = gamma_encode_srgb(y);
     }
 }
 
@@ -85,7 +89,6 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double s
 void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
         double gamma, double shadow)
 {
-    double G = 8.0 / bit_depth;
     double i_scale = 1.0 / (1 << bit_depth);
 
     /* base curve function: y = a*f(x) + shadow*g(x)
@@ -127,7 +130,7 @@ void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
     for (int i = 0; i < 1 << bit_depth; i++) {
         double x = i * i_scale;
         double y = a*pow(x, gamma/x) + b_shadow*(1 - pow(k, x));
-        lut[i] = 255.999 * pow(y, G) * black_crush(y);
+        lut[i] = gamma_encode_srgb(y);
     }
 }
 
@@ -182,7 +185,7 @@ void gamma_gen_lut_hdr(uint8_t *lut, uint8_t bit_depth, double gamma, double sha
     for (int i = 0; i < 1 << bit_depth; i++) {
         double x = i * i_scale;
         double y = G * (1.0 - pow(k, x)) * pow(x, gamma);
-        lut[i] = 255.999 * pow(y, G) * black_crush(y);
+        lut[i] = gamma_encode_srgb(y);
     }
 }
 
@@ -192,9 +195,11 @@ void gamma_gen_lut_hdr(uint8_t *lut, uint8_t bit_depth, double gamma, double sha
 // black is slope at black end before compression of cubic
 //
 // suggested coefficients:
-// gamma = 0.25 - 0.05*ln(shadow)
+// gamma = 0.2 for shadow <= 7.5
+// gamma = 1.5/shadow for 7.5 < shadow < 37.5
+// gamma = 0.04 for shadow >= 37.5
 // shadow = 1 to 64
-// black = 0.4 for every setting
+// black = 0.3 for every setting
 void gamma_gen_lut_hdr_cubic(uint8_t *lut, uint8_t bit_depth, double gamma,
         double shadow, double black)
 {
@@ -229,7 +234,6 @@ void gamma_gen_lut_hdr_cubic(uint8_t *lut, uint8_t bit_depth, double gamma,
     assert(bit_depth >= 8);
     assert(bit_depth <= 16);
 
-    double G = 8.0 / bit_depth;
     double i_scale = 1.0 / (1 << bit_depth);
 
     // numerical constraints
@@ -256,7 +260,7 @@ void gamma_gen_lut_hdr_cubic(uint8_t *lut, uint8_t bit_depth, double gamma,
             y = A*x*x*x + B*x*x + C*x;
         else
             y = r_1 * x / (x + r);
-        lut[i] = 255.999 * pow(y, G) * black_crush(y);
+        lut[i] = gamma_encode_srgb(y);
     }
 }
 
