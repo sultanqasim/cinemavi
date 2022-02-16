@@ -11,24 +11,25 @@
 #include "gamma.h"
 #include "auto_exposure.h"
 
-static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double gamma, double shadow)
+static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double black_point,
+        double gamma, double shadow)
 {
     switch (lut_mode) {
     case CMLUT_LINEAR:
     default:
-        gamma_gen_lut(glut, 12);
+        gamma_gen_lut(glut, 12, black_point);
         break;
     case CMLUT_FILMIC:
-        gamma_gen_lut_filmic(glut, 12, gamma, shadow);
+        gamma_gen_lut_filmic(glut, 12, black_point, gamma, shadow);
         break;
     case CMLUT_CUBIC:
-        gamma_gen_lut_cubic(glut, 12, gamma, shadow);
+        gamma_gen_lut_cubic(glut, 12, black_point, gamma, shadow);
         break;
     case CMLUT_HDR:
-        gamma_gen_lut_hdr(glut, 12, gamma, shadow);
+        gamma_gen_lut_hdr(glut, 12, black_point, gamma, shadow);
         break;
     case CMLUT_HDR_CUBIC:
-        gamma_gen_lut_hdr_cubic(glut, 12, gamma, shadow, 0.4);
+        gamma_gen_lut_hdr_cubic(glut, 12, black_point, gamma, shadow, 0.4);
         break;
     }
 }
@@ -106,7 +107,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     }
 
     // Step 4: Gamma encode
-    pipeline_gen_lut(glut, lut_mode, gamma, shadow);
+    pipeline_gen_lut(glut, lut_mode, 0.012, gamma, shadow);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
@@ -173,7 +174,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     colour_f2i(rgbf_1, rgb12, width_out, height_out, 4095);
 
     // Step 3: Gamma encode
-    pipeline_gen_lut(glut, lut_mode, gamma, shadow);
+    pipeline_gen_lut(glut, lut_mode, 0.012, gamma, shadow);
     gamma_encode(rgb12, rgb8, width_out, height_out, glut);
 
 cleanup:

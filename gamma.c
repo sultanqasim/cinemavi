@@ -5,10 +5,6 @@
 // x is a luminance value between 0 and 1
 static inline uint8_t gamma_encode_srgb(double x)
 {
-    const double black_point = 0.013;
-    x = (x - black_point) / (1 - black_point);
-    if (x < 0) x= 0;
-
     double encoded;
     if (x <= 0.0031308)
         encoded = 12.92 * x;
@@ -17,25 +13,36 @@ static inline uint8_t gamma_encode_srgb(double x)
     return encoded * 255;
 }
 
+static inline double i_to_x(uint16_t i, double i_scale, double black_point)
+{
+    double x = i * i_scale;
+    if (x <= black_point)
+        return 0.0;
+    else
+        return (x - black_point) / (1 - black_point);
+}
+
 // generate lut for gamma encoding a linear space image
 // bit depth should be between 8 and 16
 // length of lut should be 1 << bit_depth
-void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth)
+void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth, double black_point)
 {
-    double i_scale = 1.0 / (1 << bit_depth);
+    double i_scale = 1.0 / ((1 << bit_depth) - 1);
 
-    assert(bit_depth >= 8);
     assert(bit_depth <= 16);
 
-    for (int i = 0; i < 1 << bit_depth; i++) {
-        double x = i * i_scale;
+    if (black_point > 0.999) black_point = 0.999;
+
+    for (uint16_t i = 0; i < 1 << bit_depth; i++) {
+        double x = i_to_x(i, i_scale, black_point);
         lut[i] = gamma_encode_srgb(x);
     }
 }
 
 // apply cubic base curve before gamma encoding
 // suggested coefficients: shadow=0.3, gamma=0.2
-void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double shadow)
+void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double black_point,
+        double gamma, double shadow)
 {
     /* Cubic equation of the form:
      *  f(x) = Ax^3 + Bx^2 + Cx + D
@@ -61,12 +68,12 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double s
      * While gamma > 1 is mathematically acceptable in some scnearios, it doesn't
      * make much sense photographically, so we will bound gamma <= 1;
      */
-    double i_scale = 1.0 / (1 << bit_depth);
+    double i_scale = 1.0 / ((1 << bit_depth) - 1);
 
-    assert(bit_depth >= 8);
     assert(bit_depth <= 16);
 
     // numerical constraints
+    if (black_point > 0.999) black_point = 0.999;
     if (shadow < 0) shadow = 0;
     if (shadow > 3) shadow = 3;
     if (gamma < 0) gamma = 0;
@@ -75,8 +82,8 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double s
     double A = gamma + shadow - 2;
     double B = 3 - gamma - 2*shadow;
 
-    for (int i = 0; i < 1 << bit_depth; i++) {
-        double x = i * i_scale;
+    for (uint16_t i = 0; i < 1 << bit_depth; i++) {
+        double x = i_to_x(i, i_scale, black_point);
         double y = A*x*x*x + B*x*x + shadow*x;
         lut[i] = gamma_encode_srgb(y);
     }
@@ -86,10 +93,10 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double gamma, double s
 // shadow is the slope at the black end
 // gamma controls how midtones are boosted and highlights compressed
 // suggested coefficients: gamma=0.3, shadow=0.8
-void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
+void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth, double black_point,
         double gamma, double shadow)
 {
-    double i_scale = 1.0 / (1 << bit_depth);
+    double i_scale = 1.0 / ((1 << bit_depth) - 1);
 
     /* base curve function: y = a*f(x) + shadow*g(x)
      * y must be in [0, 1] for x in [0, 1]
@@ -120,15 +127,16 @@ void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth,
     if (gamma < 0.001) gamma = 0.001;
     if (gamma > 5) gamma = 5;
 
+    if (black_point > 0.999) black_point = 0.999;
+
     double a = 1 + shadow/ln_k;
     double b = -1 / ((1-k) * ln_k);
     double b_shadow = b * shadow;
 
-    assert(bit_depth >= 8);
     assert(bit_depth <= 16);
 
-    for (int i = 0; i < 1 << bit_depth; i++) {
-        double x = i * i_scale;
+    for (uint16_t i = 0; i < 1 << bit_depth; i++) {
+        double x = i_to_x(i, i_scale, black_point);
         double y = a*pow(x, gamma/x) + b_shadow*(1 - pow(k, x));
         lut[i] = gamma_encode_srgb(y);
     }
@@ -172,18 +180,21 @@ static double hdr_shadow_k(double shadow)
 // shadow slope is approximately 0.03^gamma * ln(1/k) / (1 - k)
 // allows extreme shadow boosting while preserving highlights
 // suggested values: gamma=0.1, shadow=[2 to 64] depending on dynamic range
-void gamma_gen_lut_hdr(uint8_t *lut, uint8_t bit_depth, double gamma, double shadow)
+void gamma_gen_lut_hdr(uint8_t *lut, uint8_t bit_depth, double black_point,
+        double gamma, double shadow)
 {
+    if (black_point > 0.999) black_point = 0.999;
+
     // bound gamma for reasonableness
     if (gamma < 0.001) gamma = 0.001;
     else if (gamma > 0.99) gamma = 0.99;
 
     double k = hdr_shadow_k(shadow / pow(0.03, gamma));
     double G = 1.0 / (1.0 - k);
-    double i_scale = 1.0 / (1 << bit_depth);
+    double i_scale = 1.0 / ((1 << bit_depth) - 1);
 
-    for (int i = 0; i < 1 << bit_depth; i++) {
-        double x = i * i_scale;
+    for (uint16_t i = 0; i < 1 << bit_depth; i++) {
+        double x = i_to_x(i, i_scale, black_point);
         double y = G * (1.0 - pow(k, x)) * pow(x, gamma);
         lut[i] = gamma_encode_srgb(y);
     }
@@ -200,8 +211,8 @@ void gamma_gen_lut_hdr(uint8_t *lut, uint8_t bit_depth, double gamma, double sha
 // gamma = 0.04 for shadow >= 37.5
 // shadow = 1 to 64
 // black = 0.3 for every setting
-void gamma_gen_lut_hdr_cubic(uint8_t *lut, uint8_t bit_depth, double gamma,
-        double shadow, double black)
+void gamma_gen_lut_hdr_cubic(uint8_t *lut, uint8_t bit_depth, double black_point,
+        double gamma, double shadow, double black)
 {
     /* Let's call our HDR curve h(x)
      *
@@ -231,10 +242,11 @@ void gamma_gen_lut_hdr_cubic(uint8_t *lut, uint8_t bit_depth, double gamma,
      *  C = C' * Q * shadow
      */
 
-    assert(bit_depth >= 8);
     assert(bit_depth <= 16);
 
-    double i_scale = 1.0 / (1 << bit_depth);
+    if (black_point > 0.999) black_point = 0.999;
+
+    double i_scale = 1.0 / ((1 << bit_depth) - 1);
 
     // numerical constraints
     if (gamma < 0.001) gamma = 0.001;
@@ -253,8 +265,8 @@ void gamma_gen_lut_hdr_cubic(uint8_t *lut, uint8_t bit_depth, double gamma,
     double B = Q * shadow*shadow * (3 - g - 2*black);
     double C = Q * shadow * black;
 
-    for (int i = 0; i < 1 << bit_depth; i++) {
-        double x = i * i_scale;
+    for (uint16_t i = 0; i < 1 << bit_depth; i++) {
+        double x = i_to_x(i, i_scale, black_point);
         double y;
         if (x < inv_shadow)
             y = A*x*x*x + B*x*x + C*x;
