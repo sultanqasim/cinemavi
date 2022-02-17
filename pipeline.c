@@ -3,10 +3,9 @@
 #include <string.h>
 #include <math.h>
 
-#include "cmraw.h"
 #include "pipeline.h"
+#include "cmraw.h"
 #include "debayer.h"
-#include "colour_xfrm.h"
 #include "noise_reduction.h"
 #include "gamma.h"
 #include "auto_exposure.h"
@@ -50,7 +49,7 @@ static void pipeline_auto_hdr(uint16_t *rgb12, uint16_t width, uint16_t height,
 }
 
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params, const CMCameraCalibration *calib)
+        const ImagePipelineParams *params, const ColourMatrix *calib)
 {
     int status = 0;
     uint16_t width = cinfo->width;
@@ -91,11 +90,11 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
 
     // Step 2: Convert to float and colour correct
     colour_i2f(rgb12, rgbf_0, width, height);
-    ColourMatrix cmat;
-    colour_matrix(&cmat, params->exposure, params->warmth + calib->warmth,
-            params->tint + calib->tint, params->hue + calib->hue, params->sat * calib->sat);
+    ColourMatrix cmat, cmat2;
+    colour_matrix(&cmat, params->exposure, params->warmth, params->tint, params->hue, params->sat);
+    colour_matmult33(&cmat2, &cmat, calib);
     ColourMatrix_f cmat_f;
-    cmat_d2f(&cmat, &cmat_f);
+    cmat_d2f(&cmat2, &cmat_f);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
 
     // Step 3: Noise reduction and convert back to integer
@@ -124,7 +123,7 @@ cleanup:
 // use fast 2x2 binned debayering and skip noise reduction
 // output image is half height and half width
 int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params, const CMCameraCalibration *calib)
+        const ImagePipelineParams *params, const ColourMatrix *calib)
 {
     int status = 0;
     uint16_t width = cinfo->width;
@@ -166,11 +165,11 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
 
     // Step 2: Convert to float, colour correct, convert back to int
     colour_i2f(rgb12, rgbf_0, width_out, height_out);
-    ColourMatrix cmat;
-    colour_matrix(&cmat, params->exposure, params->warmth + calib->warmth,
-            params->tint + calib->tint, params->hue + calib->hue, params->sat * calib->sat);
+    ColourMatrix cmat, cmat2;
+    colour_matrix(&cmat, params->exposure, params->warmth, params->tint, params->hue, params->sat);
+    colour_matmult33(&cmat2, &cmat, calib);
     ColourMatrix_f cmat_f;
-    cmat_d2f(&cmat, &cmat_f);
+    cmat_d2f(&cmat2, &cmat_f);
     colour_xfrm(rgbf_0, rgbf_1, width_out, height_out, &cmat_f);
     colour_f2i(rgbf_1, rgb12, width_out, height_out, 4095);
 

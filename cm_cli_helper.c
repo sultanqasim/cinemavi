@@ -8,14 +8,12 @@
 #include "dng.h"
 #include "pipeline.h"
 
-// Used to generate matrix to convert from camera RGB to sRGB
-// in D65 daylight illumination
-static const CMCameraCalibration default_calib = {
-    .warmth = -0.5,
-    .tint = 0.4,
-    .hue = 0.0,
-    .sat = 1.03
-};
+// Matrix to convert from camera RGB to sRGB in D65 daylight illumination
+static const ColourMatrix default_calib = {.m={
+     1.67772, -0.64990,  0.01062,
+    -0.58876,  1.49340, -0.55559,
+     0.03968, -0.50218,  1.71546
+}};
 
 static const ImagePipelineParams default_pipeline_params = {
     .exposure = 0.0,

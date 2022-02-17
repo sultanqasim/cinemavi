@@ -6,6 +6,8 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include "cmraw.h"
+#include "colour_xfrm.h"
 
 typedef enum {
     CMLUT_LINEAR,
@@ -15,14 +17,6 @@ typedef enum {
     CMLUT_HDR_AUTO,
     CMLUT_HDR_CUBIC
 } CMLUTMode;
-
-// Crudely maps from Camera RGB to sRGB in D65 light
-typedef struct {
-    double warmth;
-    double tint;
-    double hue;
-    double sat;
-} CMCameraCalibration;
 
 typedef struct {
     double exposure;
@@ -38,12 +32,12 @@ typedef struct {
 } ImagePipelineParams;
 
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params, const CMCameraCalibration *calib);
+        const ImagePipelineParams *params, const ColourMatrix *calib);
 
 // use fast 2x2 binned debayering and skip noise reduction
 // output image is half height and half width
 int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params, const CMCameraCalibration *calib);
+        const ImagePipelineParams *params, const ColourMatrix *calib);
 
 #ifdef __cplusplus
 }
