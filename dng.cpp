@@ -5,7 +5,7 @@
 #include "tiny_dng_writer.h"
 
 int bayer_rg12p_to_dng(const void *raw, uint16_t width, uint16_t height,
-        const char *dng_name, const char *camera_model)
+        const char *dng_name, const char *camera_model, const ColourMatrix *calib)
 {
     tinydngwriter::DNGImage dng_image;
     tinydngwriter::DNGWriter dng_writer(false); // little endian DNG
@@ -38,22 +38,23 @@ int bayer_rg12p_to_dng(const void *raw, uint16_t width, uint16_t height,
     const uint8_t cpat[4] = {0, 1, 1, 2};
     dng_image.SetCFAPattern(4, cpat);
 
-    // Colour calibration (use Adobe RGB primaries)
+    // Colour calibration
     // http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
-    ColourMatrix XYZtoRGB_D50 = {.m={
-        1.9624274, -0.6105343, -0.3413404,
-       -0.9787684,  1.9161415,  0.0334540,
-        0.0286869, -0.1406752,  1.3487655
-    }};
-    ColourMatrix XYZtoRGB_D65 = {.m={
-        2.0413690, -0.5649464, -0.3446944,
-       -0.9692660,  1.8760108,  0.0415560,
-        0.0134474, -0.1183897,  1.0154096
-    }};
+    const ColourMatrix sRGB_to_XYZ = {.m={
+        0.4124564, 0.3575761, 0.1804375,
+        0.2126729, 0.7151522, 0.0721750,
+        0.0193339, 0.1191920, 0.9503041
+     }};
+    ColourMatrix cam_to_XYZ_D65, XYZ_to_cam_D65;
+    // multiplication below it backwards, but doing it the right way gives wrong colours
+    // I'm not entirely sure what's happening in DNG processors
+    colour_matmult33(&cam_to_XYZ_D65, calib, &sRGB_to_XYZ);
+    colour_matinv33(&XYZ_to_cam_D65, &cam_to_XYZ_D65);
+
     dng_image.SetCalibrationIlluminant1(23); // D50
     dng_image.SetCalibrationIlluminant2(21); // D65
-    dng_image.SetColorMatrix1(3, XYZtoRGB_D50.m);
-    dng_image.SetColorMatrix2(3, XYZtoRGB_D65.m);
+    dng_image.SetColorMatrix1(3, XYZ_to_cam_D65.m);
+    dng_image.SetColorMatrix2(3, XYZ_to_cam_D65.m);
     dng_image.SetAsShotWhiteXY(1.0 / 3, 1.0 / 3);
 
     std::vector<uint16_t> unpacked;

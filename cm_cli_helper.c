@@ -32,7 +32,7 @@ void cinemavi_generate_dng(const void *raw, const CMRawHeader *cmrh,
         const char *fname)
 {
     int dng_stat = bayer_rg12p_to_dng(raw, cmrh->cinfo.width, cmrh->cinfo.height, fname,
-            cmrh->camera_model);
+            cmrh->camera_model, &default_calib);
     if (dng_stat != 0) printf("Error %d writing DNG.\n", dng_stat);
     else printf("DNG written to: %s\n", fname);
 }
