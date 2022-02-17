@@ -10,9 +10,9 @@
 
 // Matrix to convert from camera RGB to sRGB in D65 daylight illumination
 static const ColourMatrix default_calib = {.m={
-     1.67772, -0.64990,  0.01062,
+     1.75883, -0.68132,  0.01113,
     -0.58876,  1.49340, -0.55559,
-     0.03968, -0.50218,  1.71546
+     0.04679, -0.59206,  2.02246
 }};
 
 static const ImagePipelineParams default_pipeline_params = {
