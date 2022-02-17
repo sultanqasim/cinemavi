@@ -1,53 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <math.h>
 
 #include <arv.h>
 
+#include "cm_cli_helper.h"
 #include "cm_camera_helper.h"
-#include "dng.h"
 #include "cmraw.h"
-#include "pipeline.h"
 #include "auto_exposure.h"
 #include "debayer.h"
-#include "camera_params.h"
-
-static void cinemavi_generate_dng(const void *raw, const CMRawHeader *cmrh,
-        const char *fname)
-{
-    int dng_stat = bayer_rg12p_to_dng(raw, cmrh->cinfo.width, cmrh->cinfo.height, fname,
-            cmrh->camera_model);
-    if (dng_stat != 0) printf("Error %d writing DNG.\n", dng_stat);
-    else printf("DNG written to: %s\n", fname);
-}
-
-static void cinemavi_generate_tiff(const void *raw, const CMRawHeader *cmrh,
-        const char *fname)
-{
-    uint8_t *rgb8 = (uint8_t *)malloc(cmrh->cinfo.width * cmrh->cinfo.height * 3);
-    if (rgb8 != NULL) {
-        printf("Processing image...\n");
-        pipeline_process_image(raw, rgb8, &cmrh->cinfo, &default_pipeline_params, &default_calib);
-        printf("Image processed.\n");
-
-        int tiff_stat = rgb8_to_tiff(rgb8, cmrh->cinfo.width, cmrh->cinfo.height, fname);
-        if (tiff_stat != 0) printf("Error %d writing TIFF.\n", tiff_stat);
-        else printf("TIFF written to: %s\n", fname);
-    }
-    free(rgb8);
-}
-
-static void cinemavi_generate_cmr(const void *raw, const CMRawHeader *cmrh,
-        const char *fname)
-{
-    int cmr_stat = cmraw_save(raw, cmrh, fname);
-    if (cmr_stat != 0)
-        printf("Error %d writing CMR.\n", cmr_stat);
-    else
-        printf("CMR written to: %s\n", fname);
-}
 
 static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limits,
         double *shutter, double *gain)
@@ -123,16 +85,6 @@ static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limit
     *gain = params.gain_dB;
 
     return ret;
-}
-
-static bool endswith(const char *s, const char *suffix)
-{
-    size_t s_len = strlen(s);
-    size_t e_len = strlen(suffix);
-
-    if (e_len > s_len) return false;
-
-    return memcmp(s + s_len - e_len, suffix, e_len) ? false : true;
 }
 
 // Connect to the first available camera, then acquire a single buffer.

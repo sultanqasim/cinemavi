@@ -17,14 +17,20 @@ else
 CFLAGS += -O3 -ffast-math
 endif
 
-all: single_capture cmraw_process
+BINARIES = single_capture cmraw_process cmraw_to_dng
 
-LIB_OBJS = dng.opp colour_xfrm.o debayer.o convolve.o noise_reduction.o gamma.o pipeline.o cmraw.o auto_exposure.o
+all: $(BINARIES)
+
+LIB_OBJS = dng.opp colour_xfrm.o debayer.o convolve.o noise_reduction.o gamma.o
+LIB_OBJS += pipeline.o cmraw.o auto_exposure.o cm_cli_helper.o
 
 single_capture: single_capture.o cm_camera_helper.o $(LIB_OBJS)
 	$(CPP) $(LFLAGS) $(LFLAGS_ARV) $^ -o $@
 
 cmraw_process: cmraw_process.o $(LIB_OBJS)
+	$(CPP) $(LFLAGS) $^ -o $@
+
+cmraw_to_dng: cmraw_to_dng.o $(LIB_OBJS)
 	$(CPP) $(LFLAGS) $^ -o $@
 
 %.o: %.c
@@ -35,4 +41,4 @@ cmraw_process: cmraw_process.o $(LIB_OBJS)
 
 .PHONY: clean
 clean:
-	rm -f single_capture $(wildcard *.o) $(wildcard *.opp)
+	rm -f $(BINARIES) $(wildcard *.o) $(wildcard *.opp)

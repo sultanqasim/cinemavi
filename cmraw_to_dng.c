@@ -7,7 +7,7 @@
 int main (int argc, char **argv)
 {
     if (argc != 3) {
-        printf("Usage: %s [cmr_name] [tiff_name]\n", argv[0]);
+        printf("Usage: %s [cmr_name] [dng_name]\n", argv[0]);
         return -1;
     }
 
@@ -16,7 +16,7 @@ int main (int argc, char **argv)
         return -1;
     }
 
-    if (!endswith(argv[2], ".tiff")) {
+    if (!endswith(argv[2], ".dng")) {
         printf("Invalid output extension: %s\n", argv[2]);
         return -1;
     }
@@ -28,7 +28,7 @@ int main (int argc, char **argv)
     if (status != 0) {
         printf("Error %d loading RAW file.\n", status);
     } else {
-        cinemavi_generate_tiff(raw, &cmrh, argv[2]);
+        cinemavi_generate_dng(raw, &cmrh, argv[2]);
     }
 
     free(raw);
