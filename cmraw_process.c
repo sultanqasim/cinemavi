@@ -7,32 +7,15 @@
 #include "cmraw.h"
 #include "pipeline.h"
 #include "dng.h"
+#include "camera_params.h"
 
 static void cinemavi_generate_tiff(const void *raw, const CMRawHeader *cmrh,
         const char *fname)
 {
     uint8_t *rgb8 = (uint8_t *)malloc(cmrh->cinfo.width * cmrh->cinfo.height * 3);
     if (rgb8 != NULL) {
-        CMCameraCalibration calib = {
-            .warmth = -0.5,
-            .tint = 0.4,
-            .hue = 0.0,
-            .sat = 1.03
-        };
-        ImagePipelineParams params = {
-            .exposure = 0.0,
-            .warmth = 0.0,
-            .tint = 0.0,
-            .hue = 0.0,
-            .sat = 1.0,
-            .nr_lum = 150.0,
-            .nr_chrom = 600.0,
-            .gamma = 0.05,
-            .shadow = 0.4,
-            .lut_mode = CMLUT_HDR_AUTO
-        };
         printf("Processing image...\n");
-        pipeline_process_image(raw, rgb8, &cmrh->cinfo, &params, &calib);
+        pipeline_process_image(raw, rgb8, &cmrh->cinfo, &default_pipeline_params, &default_calib);
         printf("Image processed.\n");
 
         int tiff_stat = rgb8_to_tiff(rgb8, cmrh->cinfo.width, cmrh->cinfo.height, fname);
