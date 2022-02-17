@@ -17,7 +17,7 @@ else
 CFLAGS += -O3 -ffast-math
 endif
 
-BINARIES = single_capture cmraw_process cmraw_to_dng
+BINARIES = single_capture cmraw_process cmraw_to_dng camera_calibrator
 
 all: $(BINARIES)
 
@@ -31,6 +31,9 @@ cmraw_process: cmraw_process.o $(LIB_OBJS)
 	$(CPP) $(LFLAGS) $^ -o $@
 
 cmraw_to_dng: cmraw_to_dng.o $(LIB_OBJS)
+	$(CPP) $(LFLAGS) $^ -o $@
+
+camera_calibrator: camera_calibrator.o $(LIB_OBJS)
 	$(CPP) $(LFLAGS) $^ -o $@
 
 %.o: %.c

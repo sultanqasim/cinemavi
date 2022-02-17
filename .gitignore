@@ -1,6 +1,7 @@
 single_capture
 cmraw_process
 cmraw_to_dng
+camera_calibrator
 *.o
 *.opp
 *.dng

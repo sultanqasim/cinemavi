@@ -5,9 +5,8 @@
 
 void print_mat(const ColourMatrix *cmat)
 {
-    printf("%.3f %.3f %.3f\n", cmat->m[0], cmat->m[1], cmat->m[2]);
-    printf("%.3f %.3f %.3f\n", cmat->m[3], cmat->m[4], cmat->m[5]);
-    printf("%.3f %.3f %.3f\n", cmat->m[6], cmat->m[7], cmat->m[8]);
+    for (int i = 0; i < 9; i += 3)
+        printf("%8.5f %8.5f %8.5f\n", cmat->m[i], cmat->m[i+1], cmat->m[i+2]);
 }
 
 void cmat_d2f(const ColourMatrix *cmat, ColourMatrix_f *cmat_f)
