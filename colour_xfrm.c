@@ -82,8 +82,8 @@ void colour_matrix(ColourMatrix *cmat, double exposure, double warmth, double ti
     hue_mat.m[8] = a;
 
     // first adjust white balance in camera RGB space, then rotate hue, then saturation
-    colour_matmult33(&work_mat, &wb_mat, &hue_mat);
-    colour_matmult33(cmat, &work_mat, &sat_mat);
+    colour_matmult33(&work_mat, &sat_mat, &hue_mat);
+    colour_matmult33(cmat, &work_mat, &wb_mat);
 }
 
 // convert 16-bit integer to floating point image
