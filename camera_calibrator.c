@@ -212,25 +212,37 @@ int main (int argc, char **argv)
     ColourMatrix cam_to_sRGB;
     colour_matinv33(&cam_to_sRGB, &sRGB_to_cam);
 
+    printf("Camera to Linear sRGB Matrix (unbalanced):\n");
+    print_mat(&cam_to_sRGB);
+
     // See what white looks like using our matrix and rgbw_values[3]
     if (num_primaries > 3) {
-        ColourPixel white_cam = {.p={rgbw_values[3].r * inv_green,
-            rgbw_values[3].g * inv_green, rgbw_values[3].b * inv_green}};
+        ColourPixel white_cam = {.p={rgbw_values[3].r, rgbw_values[3].g, rgbw_values[3].b}};
         ColourPixel white_sRGB;
         ColourMatrix_f cam_to_sRGB_f;
         cmat_d2f(&cam_to_sRGB, &cam_to_sRGB_f);
         pixel_xfrm(&white_cam, &white_sRGB, &cam_to_sRGB_f);
 
-        // We could tweak the matrix to make white_sRGB balanced
-        // However, on my iPhone 13, with True Tone disabled, the white has a bluish tinge
-        // The RGB primaries on my iPhone seem accurate though, so we can rely on them
-        // Thus, we'll just report the computed white value for reference
-        printf("sRGB Linear White: %.5f %.5f %.5f\n\n", white_sRGB.p[0], white_sRGB.p[1],
-                white_sRGB.p[2]);
-    }
+        // Normalize to get multiplication factors for red and green
+        white_sRGB.p[0] /= white_sRGB.p[1];
+        white_sRGB.p[2] /= white_sRGB.p[1];
+        white_sRGB.p[1] = 1.0;
 
-    printf("Camera to Linear sRGB Matrix:\n");
-    print_mat(&cam_to_sRGB);
+        printf("\nsRGB Linear White: %.5f %.5f %.5f\n\n", white_sRGB.p[0], white_sRGB.p[1],
+                white_sRGB.p[2]);
+
+        // White balance the cam_to_sRGB matrix
+        ColourMatrix cam_to_sRGB_bal;
+        ColourMatrix wb_corr = {.m={
+            1.0 / white_sRGB.p[0], 0, 0,
+            0, 1.0, 0,
+            0, 0, 1.0 / white_sRGB.p[2]
+        }};
+        colour_matmult33(&cam_to_sRGB_bal, &wb_corr, &cam_to_sRGB);
+
+        printf("Camera to Linear sRGB Matrix (white balanced):\n");
+        print_mat(&cam_to_sRGB_bal);
+    }
 
     return 0;
 }
