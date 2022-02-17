@@ -16,7 +16,8 @@ static void cinemavi_generate_tiff(const void *raw, const CMRawHeader *cmrh,
         CMCameraCalibration calib = {
             .warmth = -0.5,
             .tint = 0.4,
-            .hue = 0.0
+            .hue = 0.0,
+            .sat = 1.03
         };
         ImagePipelineParams params = {
             .exposure = 0.0,

@@ -16,10 +16,12 @@ typedef enum {
     CMLUT_HDR_CUBIC
 } CMLUTMode;
 
+// Crudely maps from Camera RGB to sRGB in D65 light
 typedef struct {
     double warmth;
     double tint;
     double hue;
+    double sat;
 } CMCameraCalibration;
 
 typedef struct {

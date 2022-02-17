@@ -93,7 +93,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     colour_i2f(rgb12, rgbf_0, width, height);
     ColourMatrix cmat;
     colour_matrix(&cmat, params->exposure, params->warmth + calib->warmth,
-            params->tint + calib->tint, params->hue + calib->hue, params->sat);
+            params->tint + calib->tint, params->hue + calib->hue, params->sat * calib->sat);
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat, &cmat_f);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
@@ -168,7 +168,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     colour_i2f(rgb12, rgbf_0, width_out, height_out);
     ColourMatrix cmat;
     colour_matrix(&cmat, params->exposure, params->warmth + calib->warmth,
-            params->tint + calib->tint, params->hue + calib->hue, params->sat);
+            params->tint + calib->tint, params->hue + calib->hue, params->sat * calib->sat);
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat, &cmat_f);
     colour_xfrm(rgbf_0, rgbf_1, width_out, height_out, &cmat_f);
