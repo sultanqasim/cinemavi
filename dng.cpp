@@ -51,9 +51,20 @@ int bayer_rg12p_to_dng(const void *raw, uint16_t width, uint16_t height,
     colour_matmult33(&cam_to_XYZ_D65, calib, &sRGB_to_XYZ);
     colour_matinv33(&XYZ_to_cam_D65, &cam_to_XYZ_D65);
 
-    dng_image.SetCalibrationIlluminant1(23); // D50
+    // https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119021780.app3
+    const ColourMatrix Bradford_D65_to_StdA = {.m={
+         1.2191, -0.0489,  0.4138,
+        -0.2952,  0.9106, -0.0676,
+         0.0202, -0.0251,  0.3168
+    }};
+    ColourMatrix cam_to_XYZ_StdA, XYZ_to_cam_StdA;
+    // again the matrix multiplication needs to be backwards to work properly for some reason
+    colour_matmult33(&cam_to_XYZ_StdA, &cam_to_XYZ_D65, &Bradford_D65_to_StdA);
+    colour_matinv33(&XYZ_to_cam_StdA, &cam_to_XYZ_StdA);
+
+    dng_image.SetCalibrationIlluminant1(17); // StdA
     dng_image.SetCalibrationIlluminant2(21); // D65
-    dng_image.SetColorMatrix1(3, XYZ_to_cam_D65.m);
+    dng_image.SetColorMatrix1(3, XYZ_to_cam_StdA.m);
     dng_image.SetColorMatrix2(3, XYZ_to_cam_D65.m);
     dng_image.SetAsShotWhiteXY(1.0 / 3, 1.0 / 3);
 
