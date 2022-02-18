@@ -39,13 +39,25 @@ static inline void pixel_xfrm(const ColourPixel *pix_in, ColourPixel *pix_out,
 /* generate a colour correction matrix
  *
  * exposure:change in stops
- * warmth:  change in stops, negative is cool, positive is warm
- * tint:    change in stops, negative is green, positive is magenta
+ * red:     ratio to multiply red channel by
+ * blue:    ratio to multiply blue channel by
  * hue:     hue adjustment in radians
  * sat:     saturation is multiplied by this value
  *          1.0 means no change to saturation
  */
-void colour_matrix(ColourMatrix *cmat, double exposure, double warmth, double tint,
+void colour_matrix(ColourMatrix *cmat, double exposure, double red, double blue,
+        double hue, double sat);
+
+/* generate a colour correction matrix
+ *
+ * exposure:change in stops
+ * temp_K:  illuminant temperature in Kelvin (convert to D65)
+ * tint:    positive boosts red/blue, negative boosts green
+ * hue:     hue adjustment in radians
+ * sat:     saturation is multiplied by this value
+ *          1.0 means no change to saturation
+ */
+void colour_matrix2(ColourMatrix *cmat, double exposure, double temp_K, double tint,
         double hue, double sat);
 
 // convert 16-bit integer to floating point image
@@ -65,6 +77,17 @@ void colour_matmult33(ColourMatrix *C, const ColourMatrix *A, const ColourMatrix
 
 // 3x3 matrix inversion
 void colour_matinv33(ColourMatrix *inv, const ColourMatrix *mat);
+
+// Daylight illuminant temperature to CIE 1931 xy chromaticity
+void colour_temp_to_xy(double temp_K, double *x, double *y);
+
+// Outputs ratios to multiply sRGB red and blue channels by to correct from specified
+// illuminant (x,y) to native sRGB D65
+void colour_illum_xy_to_rb_ratio(double x, double y, double *ratio_R, double *ratio_B);
+
+// Outputs ratios to multiply sRGB red and blue channels by to correct from specified
+// correlated colour temperature (in Kelvin) to native sRGB D65
+void colour_temp_to_rb_ratio(double temp_K, double *ratio_R, double *ratio_B);
 
 #ifdef __cplusplus
 }

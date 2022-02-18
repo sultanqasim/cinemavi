@@ -91,7 +91,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     // Step 2: Convert to float and colour correct
     colour_i2f(rgb12, rgbf_0, width, height);
     ColourMatrix cmat, cmat2;
-    colour_matrix(&cmat, params->exposure, params->warmth, params->tint, params->hue, params->sat);
+    colour_matrix2(&cmat, params->exposure, params->temp_K, params->tint, params->hue, params->sat);
     colour_matmult33(&cmat2, &cmat, calib);
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat2, &cmat_f);
@@ -166,7 +166,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     // Step 2: Convert to float, colour correct, convert back to int
     colour_i2f(rgb12, rgbf_0, width_out, height_out);
     ColourMatrix cmat, cmat2;
-    colour_matrix(&cmat, params->exposure, params->warmth, params->tint, params->hue, params->sat);
+    colour_matrix(&cmat, params->exposure, params->temp_K, params->tint, params->hue, params->sat);
     colour_matmult33(&cmat2, &cmat, calib);
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat2, &cmat_f);

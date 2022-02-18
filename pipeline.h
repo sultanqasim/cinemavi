@@ -20,7 +20,7 @@ typedef enum {
 
 typedef struct {
     double exposure;
-    double warmth;
+    double temp_K;
     double tint;
     double hue;
     double sat;
