@@ -38,15 +38,13 @@ static inline void pixel_xfrm(const ColourPixel *pix_in, ColourPixel *pix_out,
 
 /* generate a colour correction matrix
  *
- * exposure:change in stops
  * red:     ratio to multiply red channel by
  * blue:    ratio to multiply blue channel by
  * hue:     hue adjustment in radians
  * sat:     saturation is multiplied by this value
  *          1.0 means no change to saturation
  */
-void colour_matrix(ColourMatrix *cmat, double exposure, double red, double blue,
-        double hue, double sat);
+void colour_matrix(ColourMatrix *cmat, double red, double blue, double hue, double sat);
 
 /* generate a colour correction matrix
  *
@@ -57,8 +55,7 @@ void colour_matrix(ColourMatrix *cmat, double exposure, double red, double blue,
  * sat:     saturation is multiplied by this value
  *          1.0 means no change to saturation
  */
-void colour_matrix2(ColourMatrix *cmat, double exposure, double temp_K, double tint,
-        double hue, double sat);
+void colour_matrix2(ColourMatrix *cmat, double temp_K, double tint, double hue, double sat);
 
 // convert 16-bit integer to floating point image
 void colour_i2f(const uint16_t *img_in, float *img_out, uint16_t width, uint16_t height);
@@ -88,6 +85,17 @@ void colour_illum_xy_to_rb_ratio(double x, double y, double *ratio_R, double *ra
 // Outputs ratios to multiply sRGB red and blue channels by to correct from specified
 // correlated colour temperature (in Kelvin) to native sRGB D65
 void colour_temp_to_rb_ratio(double temp_K, double *ratio_R, double *ratio_B);
+
+// determine camera space values to hit (1.0, 1.0, 1.0) in target space
+void colour_white_in_cam(const ColourMatrix *target_to_cam, ColourPixel *cam_white);
+
+// scale matrix (in place) to ensure white in target space is achievable in camera space
+// exposure is a boost or reduction in stops, 0 is no change
+void colour_matrix_white_scale(ColourMatrix *cam_to_target, double exposure);
+
+// pre-clip integer camera RGB values (in place) to ensure transformed clipped whites stay white
+void colour_pre_clip(uint16_t *img, uint16_t width, uint16_t height, uint16_t max_val,
+        const ColourMatrix *cam_to_target);
 
 #ifdef __cplusplus
 }

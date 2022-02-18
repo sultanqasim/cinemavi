@@ -17,25 +17,21 @@ void cmat_d2f(const ColourMatrix *cmat, ColourMatrix_f *cmat_f)
 
 /* generate a colour correction matrix
  *
- * exposure:change in stops
  * red:     ratio to multiply red channel by
  * blue:    ratio to multiply blue channel by
  * hue:     hue adjustment in radians
  * sat:     saturation is multiplied by this value
  *          1.0 means no change to saturation
  */
-void colour_matrix(ColourMatrix *cmat, double exposure, double red, double blue,
-        double hue, double sat)
+void colour_matrix(ColourMatrix *cmat, double red, double blue, double hue, double sat)
 {
     ColourMatrix wb_mat, sat_mat, hue_mat, work_mat;
 
-    double exp_factor = pow(2, exposure);
-
-    // white balance and exposure
+    // white balance
     memset(&wb_mat, 0, sizeof(ColourMatrix));
-    wb_mat.m[0] = red * exp_factor;
-    wb_mat.m[4] = exp_factor;
-    wb_mat.m[8] = blue * exp_factor;
+    wb_mat.m[0] = red;
+    wb_mat.m[4] = 1.0;
+    wb_mat.m[8] = blue;
 
     // saturation
     const double desat = 1 - sat;
@@ -74,15 +70,13 @@ void colour_matrix(ColourMatrix *cmat, double exposure, double red, double blue,
 
 /* generate a colour correction matrix
  *
- * exposure:change in stops
  * temp_K:  illuminant temperature in Kelvin (convert to D65)
  * tint:    positive boosts red/blue, negative boosts green
  * hue:     hue adjustment in radians
  * sat:     saturation is multiplied by this value
  *          1.0 means no change to saturation
  */
-void colour_matrix2(ColourMatrix *cmat, double exposure, double temp_K, double tint,
-        double hue, double sat)
+void colour_matrix2(ColourMatrix *cmat, double temp_K, double tint, double hue, double sat)
 {
     // While resulting red and blue ratios may be less than 1, they are already heavily
     // boosted by camera to sRGB matrix, so generally not saturating channels won't be an issue.
@@ -92,7 +86,7 @@ void colour_matrix2(ColourMatrix *cmat, double exposure, double temp_K, double t
     R *= tint_ratio;
     B *= tint_ratio;
 
-    colour_matrix(cmat, exposure, R, B, hue, sat);
+    colour_matrix(cmat, R, B, hue, sat);
 }
 
 // convert 16-bit integer to floating point image
@@ -214,4 +208,63 @@ void colour_temp_to_rb_ratio(double temp_K, double *ratio_R, double *ratio_B)
     double x, y;
     colour_temp_to_xy(temp_K, &x, &y);
     colour_illum_xy_to_rb_ratio(x, y, ratio_R, ratio_B);
+}
+
+// determine camera space values to hit (1.0, 1.0, 1.0) in target space
+void colour_white_in_cam(const ColourMatrix *target_to_cam, ColourPixel *cam_white)
+{
+    ColourPixel full_white = {.p={1.0, 1.0, 1.0}};
+    ColourMatrix_f target_to_cam_f;
+    cmat_d2f(target_to_cam, &target_to_cam_f);
+    pixel_xfrm(&full_white, cam_white, &target_to_cam_f);
+}
+
+// scale matrix (in place) to ensure white in target space is achievable in camera space
+// exposure is a boost or reduction in stops, 0 is no change
+void colour_matrix_white_scale(ColourMatrix *cam_to_target, double exposure)
+{
+    double exp_factor = pow(2, exposure);
+    ColourMatrix target_to_cam;
+    ColourPixel cam_white;
+    colour_matinv33(&target_to_cam, cam_to_target);
+    colour_white_in_cam(&target_to_cam, &cam_white);
+
+    float max_chan = -1E6;
+    for (int i = 0; i < 3; i++)
+        if (cam_white.p[i] > max_chan)
+            max_chan = cam_white.p[i];
+
+    exp_factor *= max_chan;
+
+    for (int i = 0; i < 9; i++)
+        cam_to_target->m[i] *= exp_factor;
+}
+
+// pre-clip integer camera RGB values (in place) to ensure transformed clipped whites stay white
+void colour_pre_clip(uint16_t *img, uint16_t width, uint16_t height, uint16_t max_val,
+        const ColourMatrix *cam_to_target)
+{
+    ColourMatrix target_to_cam;
+    ColourPixel cam_white;
+    colour_matinv33(&target_to_cam, cam_to_target);
+    colour_white_in_cam(&target_to_cam, &cam_white);
+
+    double exp_factor = 0;
+    for (int i = 0; i < 3; i++)
+        if (cam_white.p[i] > exp_factor)
+            exp_factor = cam_white.p[i];
+
+    exp_factor = 1.0 / exp_factor;
+    for (int i = 0; i < 3; i++)
+        cam_white.p[i] *= exp_factor;
+
+    uint16_t max_R = cam_white.p[0] < 1.0 ? max_val * cam_white.p[0] : max_val;
+    uint16_t max_G = cam_white.p[1] < 1.0 ? max_val * cam_white.p[1] : max_val;
+    uint16_t max_B = cam_white.p[2] < 1.0 ? max_val * cam_white.p[2] : max_val;
+
+    for (uint32_t i = 0; i < width * height * 3; i += 3) {
+        img[i] = img[i] > max_R ? max_R : img[i];
+        img[i+1] = img[i+1] > max_G ? max_G : img[i+1];
+        img[i+2] = img[i+2] > max_B ? max_B : img[i+2];
+    }
 }

@@ -88,16 +88,20 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     double shadow = params->shadow;
     pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow);
 
-    // Step 2: Convert to float and colour correct
-    colour_i2f(rgb12, rgbf_0, width, height);
+    // Step 2: Compute colour transformation matrix
     ColourMatrix cmat, cmat2;
-    colour_matrix2(&cmat, params->exposure, params->temp_K, params->tint, params->hue, params->sat);
+    colour_matrix2(&cmat, params->temp_K, params->tint, params->hue, params->sat);
     colour_matmult33(&cmat2, &cmat, calib);
+    colour_matrix_white_scale(&cmat2, params->exposure);
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat2, &cmat_f);
+
+    // Step 3: Pre-clip, convert to float, and colour correct
+    colour_pre_clip(rgb12, width, height, 4095, &cmat2);
+    colour_i2f(rgb12, rgbf_0, width, height);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
 
-    // Step 3: Noise reduction and convert back to integer
+    // Step 4: Noise reduction and convert back to integer
     if (params->nr_lum <= 1. && params->nr_chrom <= 1.) {
         colour_f2i(rgbf_1, rgb12, width, height, 4095);
     } else {
@@ -105,7 +109,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
         colour_f2i(rgbf_0, rgb12, width, height, 4095);
     }
 
-    // Step 4: Gamma encode
+    // Step 5: Gamma encode
     double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
     pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow);
     gamma_encode(rgb12, rgb8, width, height, glut);
@@ -163,17 +167,21 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     double shadow = params->shadow;
     pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow);
 
-    // Step 2: Convert to float, colour correct, convert back to int
-    colour_i2f(rgb12, rgbf_0, width_out, height_out);
+    // Step 2: Compute colour transformation matrix
     ColourMatrix cmat, cmat2;
-    colour_matrix(&cmat, params->exposure, params->temp_K, params->tint, params->hue, params->sat);
+    colour_matrix2(&cmat, params->temp_K, params->tint, params->hue, params->sat);
     colour_matmult33(&cmat2, &cmat, calib);
+    colour_matrix_white_scale(&cmat2, params->exposure);
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat2, &cmat_f);
-    colour_xfrm(rgbf_0, rgbf_1, width_out, height_out, &cmat_f);
+
+    // Step 3: Pre-clip, convert to float, colour correct, convert back to int
+    colour_pre_clip(rgb12, width, height, 4095, &cmat2);
+    colour_i2f(rgb12, rgbf_0, width, height);
+    colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
     colour_f2i(rgbf_1, rgb12, width_out, height_out, 4095);
 
-    // Step 3: Gamma encode
+    // Step 4: Gamma encode
     double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
     pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow);
     gamma_encode(rgb12, rgb8, width_out, height_out, glut);
