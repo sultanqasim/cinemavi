@@ -86,3 +86,11 @@ void CMNumberSlider::setMinMax(double minVal, double maxVal, bool logScale)
 
     this->onSpin(this->spin->value());
 }
+
+double CMNumberSlider::value() const {
+    return this->spin->value();
+}
+
+void CMNumberSlider::setValue(double val) {
+    this->spin->setValue(val);
+}
