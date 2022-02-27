@@ -3,6 +3,7 @@
 #include <cmath>
 
 static const int NUM_STEPS = 200;
+static const double EPSILON = 1E-6;
 
 CMNumberSlider::CMNumberSlider(QWidget *parent)
     : QWidget{parent}
@@ -31,9 +32,9 @@ CMNumberSlider::CMNumberSlider(QWidget *parent)
 void CMNumberSlider::onSpin(double d) {
     int tick;
     if (this->logScale) {
-        tick = log(d / this->minVal) * this->invLnStep;
+        tick = EPSILON + log(d / this->minVal) * this->invLnStep;
     } else {
-        tick = (d - this->minVal) / this->step;
+        tick = EPSILON + (d - this->minVal) / this->step;
     }
     if (tick != this->slider->value())
         this->slider->setValue(tick);
@@ -51,7 +52,7 @@ void CMNumberSlider::onSlide(int i) {
     }
 
     double spinVal = this->spin->value();
-    if ((spinVal >= nextVal) || (spinVal < curVal)) {
+    if ((spinVal >= nextVal) || (spinVal < curVal - EPSILON)) {
         this->spin->setValue(curVal);
         emit valueChanged(curVal);
     }
