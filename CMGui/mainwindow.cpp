@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     vbl->addWidget(ctrlScrollRegionWidget, 1);
     vbl->addWidget(shootButton);
 
-    ctrlScrollRegionWidget->setFixedWidth(300);
+    ctrlScrollRegionWidget->setFixedWidth(320);
     setupControls(ctrlScrollRegionWidget);
 
     shootButton->setText(tr("Shoot"));
@@ -80,10 +80,12 @@ void MainWindow::setupControls(QScrollArea *controlArea)
     wbgl->setColumnStretch(1, 1);
     QLabel *warmthLabel = new QLabel(tr("Warmth"), wbGroup);
     CMNumberSlider *warmthSlider = new CMNumberSlider(wbGroup);
+    warmthSlider->setMinMax(2500, 25000, true);
     wbgl->addWidget(warmthLabel, 0, 0);
     wbgl->addWidget(warmthSlider, 0, 1);
     QLabel *tintLabel = new QLabel(tr("Tint"), wbGroup);
     CMNumberSlider *tintSlider = new CMNumberSlider(wbGroup);
+    tintSlider->setMinMax(-2, 2);
     wbgl->addWidget(tintLabel, 1, 0);
     wbgl->addWidget(tintSlider, 1, 1);
 

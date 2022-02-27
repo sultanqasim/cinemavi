@@ -10,13 +10,15 @@ class CMNumberSlider : public QWidget
     Q_OBJECT
 public:
     explicit CMNumberSlider(QWidget *parent = nullptr);
-    void setMinMax(double minVal, double maxVal);
+    void setMinMax(double minVal, double maxVal, bool logScale = false);
 
 private:
     QDoubleSpinBox *spin;
     QSlider *slider;
     double minVal;
     double step;
+    double invLnStep;
+    bool logScale;
 
 signals:
     double valueChanged(double v);
