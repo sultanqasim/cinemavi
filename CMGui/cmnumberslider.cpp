@@ -74,14 +74,17 @@ void CMNumberSlider::setMinMax(double minVal, double maxVal, bool logScale)
 
     double rangeSize = maxVal - minVal;
     if (rangeSize >= 1000) {
-        this->spin->setSingleStep(1);
+        this->spin->setSingleStep(10);
         this->spin->setDecimals(0);
     } else if (rangeSize >= 100) {
-        this->spin->setSingleStep(0.1);
+        this->spin->setSingleStep(1);
         this->spin->setDecimals(1);
+    } else if (rangeSize >= 2){
+        this->spin->setSingleStep(0.1);
+        this->spin->setDecimals(2);
     } else {
         this->spin->setSingleStep(0.01);
-        this->spin->setDecimals(2);
+        this->spin->setDecimals(3);
     }
 
     this->onSpin(this->spin->value());

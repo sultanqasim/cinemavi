@@ -16,8 +16,10 @@ CMPictureLabel::~CMPictureLabel() {}
 
 void CMPictureLabel::resizeEvent(QResizeEvent *event)
 {
-    QPixmap px = imgMap.scaled(event->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    imgLabel->setPixmap(px);
+    if (!imgMap.isNull()) {
+        QPixmap px = imgMap.scaled(event->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        imgLabel->setPixmap(px);
+    }
     imgLabel->resize(event->size());
     QWidget::resizeEvent(event);
 }

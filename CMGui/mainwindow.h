@@ -7,6 +7,7 @@
 #include <QPixmap>
 #include <QScrollArea>
 #include "cmpicturelabel.h"
+#include "cmcontrolswidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -23,7 +24,6 @@ public:
 private:
     Ui::MainWindow *ui;
     CMPictureLabel *imgLabel;
-
-    void setupControls(QScrollArea *controlArea);
+    CMControlsWidget *controls;
 };
 #endif // MAINWINDOW_H
