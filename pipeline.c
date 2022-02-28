@@ -11,7 +11,7 @@
 #include "auto_exposure.h"
 
 static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double black_point,
-        double gamma, double shadow)
+        double gamma, double shadow, double black)
 {
     switch (lut_mode) {
     case CMLUT_LINEAR:
@@ -19,16 +19,16 @@ static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double black_poi
         gamma_gen_lut(glut, 12, black_point);
         break;
     case CMLUT_FILMIC:
-        gamma_gen_lut_filmic(glut, 12, black_point, gamma, shadow);
+        gamma_gen_lut_filmic(glut, 12, black_point, gamma, black);
         break;
     case CMLUT_CUBIC:
-        gamma_gen_lut_cubic(glut, 12, black_point, gamma, shadow);
+        gamma_gen_lut_cubic(glut, 12, black_point, gamma, black);
         break;
     case CMLUT_HDR:
         gamma_gen_lut_hdr(glut, 12, black_point, gamma, shadow);
         break;
     case CMLUT_HDR_CUBIC:
-        gamma_gen_lut_hdr_cubic(glut, 12, black_point, gamma, shadow, 0.3);
+        gamma_gen_lut_hdr_cubic(glut, 12, black_point, gamma, shadow, black);
         break;
     }
 }
@@ -111,7 +111,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
 
     // Step 5: Gamma encode
     double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
-    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow);
+    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow, params->black);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
@@ -183,7 +183,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
 
     // Step 4: Gamma encode
     double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
-    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow);
+    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow, params->black);
     gamma_encode(rgb12, rgb8, width_out, height_out, glut);
 
 cleanup:

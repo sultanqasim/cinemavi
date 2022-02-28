@@ -28,6 +28,7 @@ typedef struct {
     double nr_chrom;
     double gamma;
     double shadow;
+    double black;
     CMLUTMode lut_mode;
 } ImagePipelineParams;
 

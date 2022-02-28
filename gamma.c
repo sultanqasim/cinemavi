@@ -40,9 +40,9 @@ void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth, double black_point)
 }
 
 // apply cubic base curve before gamma encoding
-// suggested coefficients: shadow=0.3, gamma=0.2
+// suggested coefficients: shadow=0.3, black=0.2
 void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double black_point,
-        double gamma, double shadow)
+        double gamma, double black)
 {
     /* Cubic equation of the form:
      *  f(x) = Ax^3 + Bx^2 + Cx + D
@@ -52,17 +52,17 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double black_point,
      * Our requirements are:
      *  f(0) = 0
      *  f(1) = 1
-     *  f'(0) = shadow
+     *  f'(0) = black
      *  f'(1) = gamma
      *
      * Substituting in our requirements into the equations, we get:
-     *  A = gamma + shadow - 2
-     *  B = 3 - gamma - 2*shadow
-     *  C = shadow
+     *  A = gamma + black - 2
+     *  B = 3 - gamma - 2*black
+     *  C = black
      *  D = 0
      *
      * To ensure f(x) is in [0, 1] for x in [0,1]:
-     *  0 <= shadow <= 3
+     *  0 <= black <= 3
      *  0 <= gamma <= [an upper bound]
      *
      * While gamma > 1 is mathematically acceptable in some scnearios, it doesn't
@@ -74,37 +74,37 @@ void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double black_point,
 
     // numerical constraints
     if (black_point > 0.999) black_point = 0.999;
-    if (shadow < 0) shadow = 0;
-    if (shadow > 3) shadow = 3;
+    if (black < 0) black = 0;
+    if (black > 3) black = 3;
     if (gamma < 0) gamma = 0;
     if (gamma > 1) gamma = 1;
 
-    double A = gamma + shadow - 2;
-    double B = 3 - gamma - 2*shadow;
+    double A = gamma + black - 2;
+    double B = 3 - gamma - 2*black;
 
     for (uint16_t i = 0; i < 1 << bit_depth; i++) {
         double x = i_to_x(i, i_scale, black_point);
-        double y = A*x*x*x + B*x*x + shadow*x;
+        double y = A*x*x*x + B*x*x + black*x;
         lut[i] = gamma_encode_srgb(y);
     }
 }
 
 // apply a filmic base curve before gamma encoding
-// shadow is the slope at the black end
 // gamma controls how midtones are boosted and highlights compressed
-// suggested coefficients: gamma=0.3, shadow=0.8
+// black is the slope at the black end
+// suggested coefficients: gamma=0.3, black=0.8
 void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth, double black_point,
-        double gamma, double shadow)
+        double gamma, double black)
 {
     double i_scale = 1.0 / ((1 << bit_depth) - 1);
 
-    /* base curve function: y = a*f(x) + shadow*g(x)
+    /* base curve function: y = a*f(x) + black*g(x)
      * y must be in [0, 1] for x in [0, 1]
      *
      * f(x) = x^(gamma/x)
      *
      * let k = 0.05
-     * a = 1 + shadow/ln(k)
+     * a = 1 + black/ln(k)
      * a is defined to ensure that y=1 when x=1
      *
      * g(x) = b * (1 - (k^x))
@@ -117,11 +117,11 @@ void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth, double black_point,
     const double k = 0.05;
     double ln_k = log(k);
 
-    // bound shadow so that shadow * g(1) < 1
-    if (shadow >= -ln_k) shadow = ln_k * -0.999;
+    // bound black so that black * g(1) < 1
+    if (black >= -ln_k) black = ln_k * -0.999;
 
-    // shadow must be positive
-    if (shadow < 0) shadow = 0;
+    // black must be positive
+    if (black < 0) black = 0;
 
     // bound gamma to be vaguely reasonable
     if (gamma < 0.001) gamma = 0.001;
@@ -129,15 +129,15 @@ void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth, double black_point,
 
     if (black_point > 0.999) black_point = 0.999;
 
-    double a = 1 + shadow/ln_k;
+    double a = 1 + black/ln_k;
     double b = -1 / ((1-k) * ln_k);
-    double b_shadow = b * shadow;
+    double b_black = b * black;
 
     assert(bit_depth <= 16);
 
     for (uint16_t i = 0; i < 1 << bit_depth; i++) {
         double x = i_to_x(i, i_scale, black_point);
-        double y = a*pow(x, gamma/x) + b_shadow*(1 - pow(k, x));
+        double y = a*pow(x, gamma/x) + b_black*(1 - pow(k, x));
         lut[i] = gamma_encode_srgb(y);
     }
 }

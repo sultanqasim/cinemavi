@@ -25,6 +25,7 @@ static const ImagePipelineParams default_pipeline_params = {
     .nr_chrom = 600.0,
     .gamma = 0.2,
     .shadow = 1,
+    .black = 0.3,
     .lut_mode = CMLUT_HDR_CUBIC
 };
 

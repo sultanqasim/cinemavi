@@ -14,15 +14,15 @@ void gamma_gen_lut(uint8_t *lut, uint8_t bit_depth, double black_point);
 
 // apply cubic base curve before gamma encoding
 // gamma is the slope at the white end
-// shadow is the slope at the black end
+// black is the slope at the black end
 void gamma_gen_lut_cubic(uint8_t *lut, uint8_t bit_depth, double black_point,
-        double gamma, double shadow);
+        double gamma, double black);
 
 // apply a filmic base curve before gamma encoding
-// shadow is the slope at the black end
 // gamma controls how midtones are boosted and highlights compressed
+// black is the slope at the black end
 void gamma_gen_lut_filmic(uint8_t *lut, uint8_t bit_depth, double black_point,
-        double gamma, double shadow);
+        double gamma, double black);
 
 // apply the base curve x^gamma * (1 - k^x)/(1 - k) before gamma encoding
 // shadow slope is approximately 0.03^gamma * ln(1/k) / (1 - k)
