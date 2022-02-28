@@ -177,3 +177,17 @@ void CMControlsWidget::onSliderChanged(double val) {
     (void)val;
     emit paramsChanged();
 }
+
+void CMControlsWidget::getParams(ImagePipelineParams *params) {
+    params->exposure = this->expSlider->value();
+    params->temp_K = this->warmthSlider->value();
+    params->tint = this->tintSlider->value();
+    params->hue = this->hueSlider->value() * M_PI / 180.0;
+    params->sat = this->satSlider->value();
+    params->nr_lum = this->lumaSlider->value();
+    params->nr_chrom = this->chromaSlider->value();
+    params->gamma = this->gammaSlider->value();
+    params->shadow = this->shadowSlider->value();
+    params->black = this->blackSlider->value();
+    params->lut_mode = (CMLUTMode)this->tmModeSelector->currentIndex();
+}
