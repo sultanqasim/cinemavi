@@ -54,6 +54,9 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     int status = 0;
     uint16_t width = cinfo->width;
     uint16_t height = cinfo->height;
+    if (width > CM_MAX_WIDTH || (width & 1) || height > CM_MAX_HEIGHT || (height & 1))
+        return -EINVAL;
+
     uint16_t *bayer12 = (uint16_t *)malloc(width * height * sizeof(uint16_t));
     uint16_t *rgb12 = (uint16_t *)malloc(width * height * 3 * sizeof(uint16_t));
     float *rgbf_0 = (float *)malloc(width * height * 3 * sizeof(float));
@@ -62,11 +65,6 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
 
     if (bayer12 == NULL || rgb12 == NULL || rgbf_0 == NULL || rgbf_1 == NULL || glut == NULL) {
         status = -ENOMEM;
-        goto cleanup;
-    }
-
-    if (width > CM_MAX_WIDTH || (width & 1) || height > CM_MAX_HEIGHT || (height & 1)) {
-        status = -EINVAL;
         goto cleanup;
     }
 
@@ -132,6 +130,9 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     int status = 0;
     uint16_t width = cinfo->width;
     uint16_t height = cinfo->height;
+    if (width > CM_MAX_WIDTH || (width & 1) || height > CM_MAX_HEIGHT || (height & 1))
+        return -EINVAL;
+
     uint16_t width_out = width >> 1;
     uint16_t height_out = height >> 1;
     uint16_t *bayer12 = (uint16_t *)malloc(width * height * sizeof(uint16_t));
@@ -145,11 +146,6 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
         goto cleanup;
     }
 
-    if (width > CM_MAX_WIDTH || (width & 1) || height > CM_MAX_HEIGHT || (height & 1)) {
-        status = -EINVAL;
-        goto cleanup;
-    }
-
     // Step 1: Unpack and debayer the image
     if (cinfo->pixel_fmt == CM_PIXEL_FMT_BAYER_RG12P)
         unpack12_16(bayer12, raw, width * height, false);
@@ -160,6 +156,10 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
         goto cleanup;
     }
     debayer22_binned(bayer12, rgb12, width, height);
+
+    // For convenience's sake, repurpose width and height variables to match output from here on
+    width = width_out;
+    height = height_out;
 
     // Step 1.5: Compute auto HDR params if requested
     CMLUTMode lut_mode = params->lut_mode;
@@ -179,12 +179,12 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     colour_pre_clip(rgb12, width, height, 4095, &cmat2);
     colour_i2f(rgb12, rgbf_0, width, height);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
-    colour_f2i(rgbf_1, rgb12, width_out, height_out, 4095);
+    colour_f2i(rgbf_1, rgb12, width, height, 4095);
 
     // Step 4: Gamma encode
     double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
     pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow, params->black);
-    gamma_encode(rgb12, rgb8, width_out, height_out, glut);
+    gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
     free(bayer12);
