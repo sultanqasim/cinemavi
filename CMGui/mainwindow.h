@@ -23,7 +23,9 @@ public:
     ~MainWindow();
 
 public slots:
-    void onParamsChanged(void);
+    void onParamsChanged();
+    void onOpenRaw();
+    void onSaveTiff();
 
 private:
     Ui::MainWindow *ui;

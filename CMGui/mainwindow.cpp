@@ -7,11 +7,10 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QPixmap>
-#include <QImage>
 #include <QScrollArea>
-#include <QGroupBox>
-#include <QComboBox>
+#include <QAction>
+#include <QMenuBar>
+#include <QFileDialog>
 #include <cstdlib>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -47,16 +46,10 @@ MainWindow::MainWindow(QWidget *parent)
     this->renderQueue = new CMRenderQueue(this);
     connect(this->renderQueue, &CMRenderQueue::imageRendered, this->imgLabel, &CMPictureLabel::setPixmap);
 
-    // TODO: dynamically load user selected image
-    void *raw;
-    CMRawHeader cmrh;
-    int rawStat = cmraw_load(&raw, &cmrh, "/Users/sultan/Documents/cinemavi/test_ae23.cmr");
-    if (rawStat == 0) {
-        this->renderQueue->setImage(raw, &cmrh.cinfo);
-        free(raw);
-
-        // TODO: don't hard code
-    }
+    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+    QAction *openAction = new QAction(tr("&Open CMRAW..."), this);
+    fileMenu->addAction(openAction);
+    connect(openAction, &QAction::triggered, this, &MainWindow::onOpenRaw);
 
     // TODO: don't hard code camera calibration
     // Matrix to convert from camera RGB to sRGB in D65 daylight illumination
@@ -75,8 +68,30 @@ MainWindow::~MainWindow()
     ;
 }
 
-void MainWindow::onParamsChanged(void) {
+void MainWindow::onParamsChanged() {
     ImagePipelineParams params;
     this->controls->getParams(&params);
     this->renderQueue->setParams(params);
+}
+
+void MainWindow::onOpenRaw() {
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open CMRAW Image"), "",
+                                                    tr("CMRAW Files (*.cmr)"));
+    if (fileName.isNull())
+        return;
+    std::string cppFileName = fileName.toStdString();
+
+    void *raw;
+    CMRawHeader cmrh;
+    int rawStat = cmraw_load(&raw, &cmrh, cppFileName.c_str());
+    if (rawStat == 0) {
+        this->renderQueue->setImage(raw, &cmrh.cinfo);
+        free(raw);
+    } else {
+        // TODO: show error dialog
+    }
+}
+
+void MainWindow::onSaveTiff() {
+    // TODO
 }
