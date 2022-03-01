@@ -8,7 +8,6 @@ CMPictureLabel::CMPictureLabel(QWidget *parent) :
 {
     imgLabel = new QLabel(this);
     imgLabel->setAlignment(Qt::AlignCenter);
-    imgMap = QPixmap("/Users/sultan/Documents/cinemavi/test_cubic.tiff");
     imgLabel->setPixmap(imgMap);
 }
 
@@ -16,19 +15,27 @@ CMPictureLabel::~CMPictureLabel() {}
 
 void CMPictureLabel::resizeEvent(QResizeEvent *event)
 {
-    if (!imgMap.isNull()) {
-        QPixmap px = imgMap.scaled(event->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        imgLabel->setPixmap(px);
-    }
+    this->regenPixmap(event->size());
     imgLabel->resize(event->size());
     QWidget::resizeEvent(event);
 }
 
 void CMPictureLabel::setImage(const uint8_t *img_rgb8, uint16_t width, uint16_t height)
 {
-    QImage img(img_rgb8, width, height, width, QImage::Format_RGB888);
+    QImage img(img_rgb8, width, height, width*3, QImage::Format_RGB888);
 
     this->imgMap.convertFromImage(img);
-    this->imgLabel->setPixmap(this->imgMap.scaled(
-            this->imgLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    this->regenPixmap(this->imgLabel->size());
+}
+
+void CMPictureLabel::setPixmap(const QPixmap &pm) {
+    this->imgMap = pm;
+    this->regenPixmap(this->imgLabel->size());
+}
+
+void CMPictureLabel::regenPixmap(const QSize &size) {
+    if (!this->imgMap.isNull()) {
+        QPixmap pm = this->imgMap.scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        this->imgLabel->setPixmap(pm);
+    }
 }

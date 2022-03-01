@@ -8,6 +8,7 @@
 #include <QScrollArea>
 #include "cmpicturelabel.h"
 #include "cmcontrolswidget.h"
+#include "cmrenderqueue.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -21,9 +22,13 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+public slots:
+    void onParamsChanged(void);
+
 private:
     Ui::MainWindow *ui;
     CMPictureLabel *imgLabel;
     CMControlsWidget *controls;
+    CMRenderQueue *renderQueue;
 };
 #endif // MAINWINDOW_H

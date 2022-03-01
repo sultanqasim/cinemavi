@@ -21,6 +21,8 @@ SOURCES += \
     cmcontrolswidget.cpp \
     cmnumberslider.cpp \
     cmpicturelabel.cpp \
+    cmrenderqueue.cpp \
+    cmrenderworker.cpp \
     main.cpp \
     mainwindow.cpp
 
@@ -39,6 +41,8 @@ HEADERS += \
     cmcontrolswidget.h \
     cmnumberslider.h \
     cmpicturelabel.h \
+    cmrenderqueue.h \
+    cmrenderworker.h \
     mainwindow.h
 
 FORMS +=
