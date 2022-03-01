@@ -1,6 +1,6 @@
 #include "cmrenderworker.h"
-#include <cassert>
 #include <QImage>
+#include <cassert>
 
 CMRenderWorker::CMRenderWorker(QObject *parent)
     : QObject{parent}
@@ -9,13 +9,11 @@ CMRenderWorker::CMRenderWorker(QObject *parent)
 }
 
 void CMRenderWorker::setImage(const void *raw, const CMCaptureInfo *cinfo) {
-    assert(!this->rendering);
     this->imgRaw = raw;
     this->cinfo = cinfo;
 }
 
 void CMRenderWorker::setParams(const ImagePipelineParams &params, const ColourMatrix &calib) {
-    assert(!this->rendering);
     this->camCalib = calib;
     this->plParams = params;
     this->paramsSet = true;
@@ -37,5 +35,4 @@ void CMRenderWorker::render() {
     pixmap.convertFromImage(img);
 
     emit imageRendered(pixmap);
-    emit finished();
 }

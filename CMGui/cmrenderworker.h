@@ -18,17 +18,13 @@ public slots:
 
 signals:
     void imageRendered(const QPixmap &pm);
-    void finished();
 
 private:
     ImagePipelineParams plParams;
     ColourMatrix camCalib;
     const CMCaptureInfo *cinfo;
     const void *imgRaw;
-
-    // this is a one shot single use class
     bool paramsSet;
-    bool rendering;
 };
 
 #endif // CMRENDERWORKER_H

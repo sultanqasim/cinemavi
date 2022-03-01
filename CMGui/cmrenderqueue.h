@@ -3,13 +3,15 @@
 
 #include <QObject>
 #include <QPixmap>
-#include "../pipeline.h"
+#include <QThread>
+#include "cmrenderworker.h"
 
 class CMRenderQueue : public QObject
 {
     Q_OBJECT
 public:
     explicit CMRenderQueue(QObject *parent = nullptr);
+    ~CMRenderQueue();
 
     // always call from a single thread
     void setImage(const void *raw, const CMCaptureInfo *cinfo);
@@ -23,6 +25,9 @@ signals:
     void imageRendered(const QPixmap &pm);
 
 private:
+    QThread renderThread;
+    CMRenderWorker worker;
+
     bool imageSet;
     bool calibSet;
     bool paramsSet;

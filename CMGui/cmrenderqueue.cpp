@@ -6,7 +6,15 @@
 CMRenderQueue::CMRenderQueue(QObject *parent)
     : QObject{parent}
 {
+    // set up worker in its thread
+    worker.moveToThread(&renderThread);
+    connect(&renderThread, &QThread::started, &worker, &CMRenderWorker::render);
+    connect(&worker, &CMRenderWorker::imageRendered, this, &CMRenderQueue::renderDone);
+}
 
+CMRenderQueue::~CMRenderQueue() {
+    renderThread.quit();
+    renderThread.wait();
 }
 
 void CMRenderQueue::setImage(const void *raw, const CMCaptureInfo *cinfo)
@@ -51,22 +59,16 @@ void CMRenderQueue::startRender() {
         return;
     rendering = true;
 
-    // create worker thread
-    QThread *thread = new QThread;
-    CMRenderWorker *worker = new CMRenderWorker;
-    worker->setImage(this->currentRaw.data(), &this->currentCInfo);
-    worker->setParams(this->plParams, this->camCalib);
-    worker->moveToThread(thread);
-    connect(thread, SIGNAL(started()), worker, SLOT(render()));
-    connect(worker, &CMRenderWorker::imageRendered, this, &CMRenderQueue::renderDone);
-    connect(worker, SIGNAL(finished()), thread, SLOT(quit()));
-    connect(worker, SIGNAL(finished()), worker, SLOT(deleteLater()));
-    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
-    thread->start();
+    // prepare and launch worker
+    worker.setImage(this->currentRaw.data(), &this->currentCInfo);
+    worker.setParams(this->plParams, this->camCalib);
+    renderThread.start();
 }
 
 void CMRenderQueue::renderDone(const QPixmap &pm) {
     emit imageRendered(pm);
+    renderThread.quit();
+    renderThread.wait();
 
     if (imageQueued) {
         currentRaw = nextRaw;
