@@ -58,7 +58,7 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     cgl->addWidget(hueSlider, 0, 1);
     QLabel *satLabel = new QLabel(tr("Satuation"), colourGroup);
     satSlider = new CMNumberSlider(colourGroup);
-    satSlider->setMinMax(0, 2);
+    satSlider->setMinMax(0.3, 1.3);
     cgl->addWidget(satLabel, 1, 0);
     cgl->addWidget(satSlider, 1, 1);
 
