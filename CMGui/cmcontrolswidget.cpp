@@ -171,6 +171,8 @@ void CMControlsWidget::onLUTModeChanged(int index) {
         blackSlider->setEnabled(true);
         break;
     }
+
+    emit paramsChanged();
 }
 
 void CMControlsWidget::onSliderChanged(double val) {
