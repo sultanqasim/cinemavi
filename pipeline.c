@@ -36,18 +36,40 @@ static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double black_poi
 static void pipeline_auto_hdr(uint16_t *rgb12, uint16_t width, uint16_t height,
         CMLUTMode *lut_mode, double *gamma, double *shadow, double *black)
 {
+    const double targ10 = 200;
+    const double targ75 = 800;
+
     if (*lut_mode == CMLUT_HDR_AUTO) {
-        double boost = auto_hdr_shadow(rgb12, width, height, 250, 1000);
+        double boost = auto_hdr_shadow(rgb12, width, height, targ10, targ75);
+        if (boost < 1) boost = 1.0;
+        else if (boost > 32) boost = 32.0;
+        *shadow = boost;
+
         *lut_mode = CMLUT_HDR;
-        *shadow = boost > 32 ? 32 : boost;
         *gamma = 0.2;
     } else if (*lut_mode == CMLUT_HDR_CUBIC_AUTO) {
-        double boost = auto_hdr_shadow(rgb12, width, height, 250, 1000);
+        uint16_t p10, p75, p99;
+        if (!exposure_percentiles(rgb12, width, height, &p10, &p75, &p99)) {
+            *shadow = pow(targ75 / p75, 1.4);
+            if (*shadow > 48) *shadow = 48;
+            else if (*shadow < 1) *shadow = 1;
+
+            double ln_shadow = log(*shadow);
+            *gamma = 0.3 - 0.06*ln_shadow;
+            if (*gamma < 0.05) *gamma = 0.05;
+
+            double black_boost = targ10 / (p10 * *shadow);
+            if (black_boost > 6) black_boost = 6;
+            else if (black_boost < 1) black_boost = 1;
+            *black = 0.3*black_boost + 0.2*ln_shadow;
+            if (*black > 3) *black = 3;
+        } else {
+            *gamma = 0.3;
+            *shadow = 1;
+            *black = 0.3;
+        }
+
         *lut_mode = CMLUT_HDR_CUBIC;
-        *shadow = boost > 32 ? 32 : boost;
-        double ln_shadow = log(*shadow);
-        *gamma = 0.2 - 0.04*ln_shadow;
-        *black = 0.3 + 0.25*ln_shadow;
     }
 }
 

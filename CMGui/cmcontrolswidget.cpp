@@ -130,7 +130,7 @@ void CMControlsWidget::onReset(void) {
     satSlider->setValue(1);
     lumaSlider->setValue(0);
     chromaSlider->setValue(0);
-    gammaSlider->setValue(0.2);
+    gammaSlider->setValue(0.3);
     shadowSlider->setValue(1);
     blackSlider->setValue(0.3);
     tmModeSelector->setCurrentIndex(CMLUT_HDR_CUBIC);
