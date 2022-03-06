@@ -26,6 +26,11 @@ double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
 uint16_t auto_black_point(const uint16_t *img_rgb, uint16_t width, uint16_t height,
         uint16_t white_val);
 
+// grey-world inspired algorithm that balances the 99.5th percentiles of each channel
+// outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
+void auto_white_balance(const float *img_rgb, uint16_t width, uint16_t height,
+        double *red, double *blue);
+
 typedef struct {
     double shutter_us;
     double gain_dB;

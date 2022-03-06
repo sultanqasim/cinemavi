@@ -222,3 +222,64 @@ cleanup:
 
     return status;
 }
+
+// TODO: add argument to choose algorithm
+// options: 99.5th percentile balance and RAWB (https://web.stanford.edu/~sujason/ColorBalancing/robustawb.html)
+int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
+        const ColourMatrix *calib, double *red, double *blue)
+{
+    int status = 0;
+    uint16_t width = cinfo->width;
+    uint16_t height = cinfo->height;
+    if (width > CM_MAX_WIDTH || (width & 1) || height > CM_MAX_HEIGHT || (height & 1))
+        return -EINVAL;
+
+    uint16_t width_out = width >> 1;
+    uint16_t height_out = height >> 1;
+    uint16_t *bayer12 = (uint16_t *)malloc(width * height * sizeof(uint16_t));
+    uint16_t *rgb12 = (uint16_t *)malloc(width_out * height_out * 3 * sizeof(uint16_t));
+    float *rgbf_0 = (float *)malloc(width_out * height_out * 3 * sizeof(float));
+    float *rgbf_1 = (float *)malloc(width_out * height_out * 3 * sizeof(float));
+
+    if (bayer12 == NULL || rgb12 == NULL || rgbf_0 == NULL || rgbf_1 == NULL) {
+        status = -ENOMEM;
+        goto cleanup;
+    }
+
+    // Step 1: Unpack and debayer the image
+    if (cinfo->pixel_fmt == CM_PIXEL_FMT_BAYER_RG12P)
+        unpack12_16(bayer12, raw, width * height, false);
+    else if (cinfo->pixel_fmt == CM_PIXEL_FMT_BAYER_RG12)
+        memcpy(bayer12, raw, width * height * sizeof(uint16_t));
+    else {
+        status = -EINVAL;
+        goto cleanup;
+    }
+    debayer22_binned(bayer12, rgb12, width, height);
+
+    // For convenience's sake, repurpose width and height variables to match output from here on
+    width = width_out;
+    height = height_out;
+
+    // Step 2: Compute colour transformation matrix
+    ColourMatrix cmat = *calib;
+    colour_matrix_white_scale(&cmat, 0.0);
+    ColourMatrix_f cmat_f;
+    cmat_d2f(&cmat, &cmat_f);
+
+    // Step 3: Pre-clip, convert to float, colour correct
+    colour_pre_clip(rgb12, width, height, 4095, &cmat);
+    colour_i2f(rgb12, rgbf_0, width, height);
+    colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
+
+    // Step 4: find white balance
+    auto_white_balance(rgbf_1, width, height, red, blue);
+
+cleanup:
+    free(bayer12);
+    free(rgb12);
+    free(rgbf_0);
+    free(rgbf_1);
+
+    return status;
+}
