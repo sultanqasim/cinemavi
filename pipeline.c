@@ -9,6 +9,7 @@
 #include "noise_reduction.h"
 #include "gamma.h"
 #include "auto_exposure.h"
+#include "cie_xyz.h"
 
 static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double black_point,
         double gamma, double shadow, double black)
@@ -113,8 +114,9 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow, &black);
 
     // Step 2: Compute colour transformation matrix
-    ColourMatrix cmat, cmat2;
-    colour_matrix2(&cmat, params->temp_K, params->tint, params->hue, params->sat);
+    ColourMatrix cmat, cmat2, cam_to_xyz;
+    colour_matmult33(&cam_to_xyz, &CM_sRGB2XYZ, calib);
+    colour_matrix2(&cmat, &cam_to_xyz, params->temp_K, params->tint, params->hue, params->sat);
     colour_matmult33(&cmat2, &cmat, calib);
     colour_matrix_white_scale(&cmat2, params->exposure);
     ColourMatrix_f cmat_f;
@@ -195,8 +197,9 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow, &black);
 
     // Step 2: Compute colour transformation matrix
-    ColourMatrix cmat, cmat2;
-    colour_matrix2(&cmat, params->temp_K, params->tint, params->hue, params->sat);
+    ColourMatrix cmat, cmat2, cam_to_xyz;
+    colour_matmult33(&cam_to_xyz, &CM_sRGB2XYZ, calib);
+    colour_matrix2(&cmat, &cam_to_xyz, params->temp_K, params->tint, params->hue, params->sat);
     colour_matmult33(&cmat2, &cmat, calib);
     colour_matrix_white_scale(&cmat2, params->exposure);
     ColourMatrix_f cmat_f;
