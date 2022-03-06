@@ -28,6 +28,7 @@ SOURCES += \
 
 HEADERS += \
     ../auto_exposure.h \
+    ../cie_xyz.h \
     ../cmraw.h \
     ../colour_xfrm.h \
     ../convolve.h \

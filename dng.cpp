@@ -1,5 +1,6 @@
 #include "dng.h"
 #include "debayer.h"
+#include "cie_xyz.h"
 
 #define TINY_DNG_WRITER_IMPLEMENTATION
 #include "tiny_dng_writer.h"
@@ -39,16 +40,10 @@ int bayer_rg12p_to_dng(const void *raw, uint16_t width, uint16_t height,
     dng_image.SetCFAPattern(4, cpat);
 
     // Colour calibration
-    // http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
-    const ColourMatrix sRGB_to_XYZ = {.m={
-        0.4124564, 0.3575761, 0.1804375,
-        0.2126729, 0.7151522, 0.0721750,
-        0.0193339, 0.1191920, 0.9503041
-     }};
     ColourMatrix cam_to_XYZ_D65, XYZ_to_cam_D65;
     // multiplication below it backwards, but doing it the right way gives wrong colours
     // I'm not entirely sure what's happening in DNG processors
-    colour_matmult33(&cam_to_XYZ_D65, calib, &sRGB_to_XYZ);
+    colour_matmult33(&cam_to_XYZ_D65, calib, &CM_sRGB2XYZ);
     colour_matinv33(&XYZ_to_cam_D65, &cam_to_XYZ_D65);
 
     // https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119021780.app3

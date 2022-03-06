@@ -22,10 +22,25 @@ void print_mat(const ColourMatrix *cmat);
 void cmat_d2f(const ColourMatrix *cmat, ColourMatrix_f *cmat_f);
 
 typedef struct {
-    float p[3];
+    double p[3];
 } ColourPixel;
 
+typedef struct {
+    float p[3];
+} ColourPixel_f;
+
 static inline void pixel_xfrm(const ColourPixel *pix_in, ColourPixel *pix_out,
+        const ColourMatrix *cmat)
+{
+    for (int i = 0; i < 3; i++) {
+        pix_out->p[i] =
+            pix_in->p[0] * cmat->m[i*3 + 0] +
+            pix_in->p[1] * cmat->m[i*3 + 1] +
+            pix_in->p[2] * cmat->m[i*3 + 2];
+    }
+}
+
+static inline void pixel_xfrm_f(const ColourPixel_f *pix_in, ColourPixel_f *pix_out,
         const ColourMatrix_f *cmat)
 {
     for (int i = 0; i < 3; i++) {
@@ -76,15 +91,24 @@ void colour_matmult33(ColourMatrix *C, const ColourMatrix *A, const ColourMatrix
 void colour_matinv33(ColourMatrix *inv, const ColourMatrix *mat);
 
 // Daylight illuminant temperature to CIE 1931 xy chromaticity
-void colour_temp_to_xy(double temp_K, double *x, double *y);
+void colour_temp_tint_to_xy(double temp_K, double tint, double *x, double *y);
+
+// CIE 1931 xy chromaticity to CCT
+void colour_xy_to_temp_tint(double x, double y, double *temp_K, double *tint);
 
 // Outputs ratios to multiply sRGB red and blue channels by to correct from specified
 // illuminant (x,y) to native sRGB D65
 void colour_illum_xy_to_rb_ratio(double x, double y, double *ratio_R, double *ratio_B);
 
+// inverse of colour_illum_xy_to_rb_ratio
+void colour_rb_ratio_to_illum_xy(double ratio_R, double ratio_B, double *x, double *y);
+
 // Outputs ratios to multiply sRGB red and blue channels by to correct from specified
 // correlated colour temperature (in Kelvin) to native sRGB D65
-void colour_temp_to_rb_ratio(double temp_K, double *ratio_R, double *ratio_B);
+void colour_temp_tint_to_rb_ratio(double temp_K, double tint, double *ratio_R, double *ratio_B);
+
+// Approximately inverts colour_temp_tint_to_rb_ratio
+void colour_rb_ratio_to_temp_tint(double ratio_R, double ratio_B, double *temp_K, double *tint);
 
 // determine camera space values to hit (1.0, 1.0, 1.0) in target space
 void colour_white_in_cam(const ColourMatrix *target_to_cam, ColourPixel *cam_white);

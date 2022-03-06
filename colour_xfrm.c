@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include "cie_xyz.h"
 
 void print_mat(const ColourMatrix *cmat)
 {
@@ -81,10 +82,7 @@ void colour_matrix2(ColourMatrix *cmat, double temp_K, double tint, double hue, 
     // While resulting red and blue ratios may be less than 1, they are already heavily
     // boosted by camera to sRGB matrix, so generally not saturating channels won't be an issue.
     double R, B;
-    colour_temp_to_rb_ratio(temp_K, &R, &B);
-    double tint_ratio = pow(2, tint);
-    R *= tint_ratio;
-    B *= tint_ratio;
+    colour_temp_tint_to_rb_ratio(temp_K, tint, &R, &B);
 
     colour_matrix(cmat, R, B, hue, sat);
 }
@@ -120,11 +118,11 @@ void colour_f2i(const float *img_in, uint16_t *img_out, uint16_t width, uint16_t
 void colour_xfrm(const float *img_in, float *img_out, uint16_t width, uint16_t height,
         const ColourMatrix_f *cmat)
 {
-    const ColourPixel *imgp_in = (const ColourPixel *)img_in;
-    ColourPixel *imgp_out = (ColourPixel *)img_out;
+    const ColourPixel_f *imgp_in = (const ColourPixel_f *)img_in;
+    ColourPixel_f *imgp_out = (ColourPixel_f *)img_out;
 
     for (uint32_t i = 0; i < width * height; i++)
-        pixel_xfrm(imgp_in + i, imgp_out + i, cmat);
+        pixel_xfrm_f(imgp_in + i, imgp_out + i, cmat);
 }
 
 // C = A * B
@@ -159,7 +157,7 @@ void colour_matinv33(ColourMatrix *inv, const ColourMatrix *mat)
 }
 
 // Daylight illuminant temperature to CIE 1931 xy chromaticity
-void colour_temp_to_xy(double temp_K, double *x, double *y)
+void colour_temp_tint_to_xy(double temp_K, double tint, double *x, double *y)
 {
     // Officially for 4000K to 25000K, but I stretch it a bit
     // Not super accurate below 3000K but close enough down to 2500K
@@ -180,43 +178,95 @@ void colour_temp_to_xy(double temp_K, double *x, double *y)
         d = -2.0064e9;
     }
 
-    *x = a + b/temp_K + c/(temp_K * temp_K) + d/(temp_K*temp_K*temp_K);
-    *y = -3*(*x)*(*x) + 2.870*(*x) - 0.275;
+    double x0 = a + b/temp_K + c/(temp_K * temp_K) + d/(temp_K*temp_K*temp_K);
+    double y0 = -3*x0*x0 + 2.870*x0 - 0.275;
+
+    /* We want to adjust tint along isotherm, so n needs to be kept constant
+     * where n = (x - x_e) / (y - y_e), x_e = 0.3366, y_e = 0.1725
+     *
+     * Let's define tint as 10x the distance in xy coords along isotherm
+     * delta_y = 0.1 * tint / sqrt(1 + n^2)
+     * y = y0 + delta_y
+     * (x - x_e) / (y0 + delta_y - y_e) = (x0 - x_e) / (y0 - y_e)
+     *
+     * Solving for x, we get:
+     * x = (x0*(y - y_e) - x_e*delta_y) / (y0 - y_e)
+     */
+    if (tint != 0) {
+        double n = (x0 - 0.3366) / (y0 - 0.1725);
+        double delta_y = 0.1 * tint / sqrt(1 + n*n);
+        *y = y0 + delta_y;
+        *x = (x0*(*y - 0.1725) - 0.3366*delta_y) / (y0 - 0.1725);
+    } else {
+        *x = x0;
+        *y = y0;
+    }
+}
+
+// CIE 1931 xy chromaticity to CCT
+void colour_xy_to_temp_tint(double x, double y, double *temp_K, double *tint)
+{
+    // https://en.wikipedia.org/wiki/Color_temperature#Approximation
+    // Hernández-Andrés approximation from xy to temp_K
+    double n = (x - 0.3366) / (y - 0.1735);
+    *temp_K = -949.86315 + 6253.80338*exp(n/-0.92159) + 28.70599*exp(n/-0.20039) + 0.00004*exp(n/-0.07125);
+
+    // find xy distance from daylight coords at calculated temp
+    // tint ix 10x this distance as per our definition
+    double day_x, day_y;
+    colour_temp_tint_to_xy(*temp_K, 0, &day_x, &day_y);
+    double delta_x, delta_y;
+    delta_x = x - day_x;
+    delta_y = y - day_y;
+    *tint = 10.0 * sqrt(delta_x*delta_x + delta_y*delta_y) * delta_y/fabs(delta_y);
 }
 
 // Outputs ratios to multiply sRGB red and blue channels by to correct from specified
 // illuminant (x,y) to native sRGB D65
 void colour_illum_xy_to_rb_ratio(double x, double y, double *ratio_R, double *ratio_B)
 {
-    // Y = 1.0, convert xyY to XYZ
-    double X = x/y;
-    double Z = (1.0 - x - y) / y;
+    // Y = 1.0, convert xyY to sRGB
+    ColourPixel XYZ = {.p={x/y, 1.0, (1.0 - x - y) / y}};
+    ColourPixel sRGB;
+    pixel_xfrm(&XYZ, &sRGB, &CM_XYZ2sRGB);
 
-    // now convert XYZ to sRGB
-    double R = 3.2406*X - 1.5372 - 0.4986*Z;
-    double G = -0.9689*X + 1.8758 + 0.0415*Z;
-    double B = 0.0557*X - 0.2040 + 1.0570*Z;
+    *ratio_R = sRGB.p[1]/sRGB.p[0];
+    *ratio_B = sRGB.p[1]/sRGB.p[2];
+}
 
-    *ratio_R = G/R;
-    *ratio_B = G/B;
+// inverse of colour_illum_xy_to_rb_ratio
+void colour_rb_ratio_to_illum_xy(double ratio_R, double ratio_B, double *x, double *y)
+{
+    ColourPixel sRGB = {.p={1/ratio_R, 1, 1/ratio_B}};
+    ColourPixel XYZ;
+    pixel_xfrm(&sRGB, &XYZ, &CM_sRGB2XYZ);
+
+    *x = XYZ.p[0] / (XYZ.p[0] + XYZ.p[1] + XYZ.p[2]);
+    *y = XYZ.p[1] / (XYZ.p[0] + XYZ.p[1] + XYZ.p[2]);
 }
 
 // Outputs ratios to multiply sRGB red and blue channels by to correct from specified
 // correlated colour temperature (in Kelvin) to native sRGB D65
-void colour_temp_to_rb_ratio(double temp_K, double *ratio_R, double *ratio_B)
+void colour_temp_tint_to_rb_ratio(double temp_K, double tint, double *ratio_R, double *ratio_B)
 {
     double x, y;
-    colour_temp_to_xy(temp_K, &x, &y);
+    colour_temp_tint_to_xy(temp_K, tint, &x, &y);
     colour_illum_xy_to_rb_ratio(x, y, ratio_R, ratio_B);
+}
+
+// Approximate inverse of colour_temp_tint_to_rb_ratio
+void colour_rb_ratio_to_temp_tint(double ratio_R, double ratio_B, double *temp_K, double *tint)
+{
+    double x, y;
+    colour_rb_ratio_to_illum_xy(ratio_R, ratio_B, &x, &y);
+    colour_xy_to_temp_tint(x, y, temp_K, tint);
 }
 
 // determine camera space values to hit (1.0, 1.0, 1.0) in target space
 void colour_white_in_cam(const ColourMatrix *target_to_cam, ColourPixel *cam_white)
 {
     ColourPixel full_white = {.p={1.0, 1.0, 1.0}};
-    ColourMatrix_f target_to_cam_f;
-    cmat_d2f(target_to_cam, &target_to_cam_f);
-    pixel_xfrm(&full_white, cam_white, &target_to_cam_f);
+    pixel_xfrm(&full_white, cam_white, target_to_cam);
 }
 
 // scale matrix (in place) to ensure white in target space is achievable in camera space
@@ -229,7 +279,7 @@ void colour_matrix_white_scale(ColourMatrix *cam_to_target, double exposure)
     colour_matinv33(&target_to_cam, cam_to_target);
     colour_white_in_cam(&target_to_cam, &cam_white);
 
-    float max_chan = -1E6;
+    double max_chan = -1E6;
     for (int i = 0; i < 3; i++)
         if (cam_white.p[i] > max_chan)
             max_chan = cam_white.p[i];

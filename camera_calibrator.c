@@ -219,9 +219,7 @@ int main (int argc, char **argv)
     if (num_primaries > 3) {
         ColourPixel white_cam = {.p={rgbw_values[3].r, rgbw_values[3].g, rgbw_values[3].b}};
         ColourPixel white_sRGB;
-        ColourMatrix_f cam_to_sRGB_f;
-        cmat_d2f(&cam_to_sRGB, &cam_to_sRGB_f);
-        pixel_xfrm(&white_cam, &white_sRGB, &cam_to_sRGB_f);
+        pixel_xfrm(&white_cam, &white_sRGB, &cam_to_sRGB);
 
         // Normalize to get multiplication factors for red and green
         white_sRGB.p[0] /= white_sRGB.p[1];
