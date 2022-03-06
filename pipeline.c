@@ -34,17 +34,20 @@ static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double black_poi
 }
 
 static void pipeline_auto_hdr(uint16_t *rgb12, uint16_t width, uint16_t height,
-        CMLUTMode *lut_mode, double *gamma, double *shadow)
+        CMLUTMode *lut_mode, double *gamma, double *shadow, double *black)
 {
     if (*lut_mode == CMLUT_HDR_AUTO) {
-        double boost = auto_hdr_shadow(rgb12, width, height, 360, 1800);
-        if (boost > 2) {
-            *lut_mode = CMLUT_HDR;
-            *shadow = boost > 32 ? 32 : boost;
-            *gamma = 0.3 - pow(*shadow, 1./3)*0.06;
-        } else {
-            *lut_mode = CMLUT_CUBIC;
-        }
+        double boost = auto_hdr_shadow(rgb12, width, height, 250, 1000);
+        *lut_mode = CMLUT_HDR;
+        *shadow = boost > 32 ? 32 : boost;
+        *gamma = 0.2;
+    } else if (*lut_mode == CMLUT_HDR_CUBIC_AUTO) {
+        double boost = auto_hdr_shadow(rgb12, width, height, 250, 1000);
+        *lut_mode = CMLUT_HDR_CUBIC;
+        *shadow = boost > 32 ? 32 : boost;
+        double ln_shadow = log(*shadow);
+        *gamma = 0.2 - 0.04*ln_shadow;
+        *black = 0.3 + 0.25*ln_shadow;
     }
 }
 
@@ -84,7 +87,8 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     CMLUTMode lut_mode = params->lut_mode;
     double gamma = params->gamma;
     double shadow = params->shadow;
-    pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow);
+    double black = params->black;
+    pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow, &black);
 
     // Step 2: Compute colour transformation matrix
     ColourMatrix cmat, cmat2;
@@ -109,7 +113,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
 
     // Step 5: Gamma encode
     double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
-    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow, params->black);
+    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow, black);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
@@ -165,7 +169,8 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     CMLUTMode lut_mode = params->lut_mode;
     double gamma = params->gamma;
     double shadow = params->shadow;
-    pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow);
+    double black = params->black;
+    pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow, &black);
 
     // Step 2: Compute colour transformation matrix
     ColourMatrix cmat, cmat2;
@@ -183,7 +188,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
 
     // Step 4: Gamma encode
     double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
-    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow, params->black);
+    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow, black);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:

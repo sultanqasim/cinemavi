@@ -87,6 +87,7 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     tmModeSelector->addItem(tr("HDR"), 3);
     tmModeSelector->addItem(tr("HDR Auto"), 4);
     tmModeSelector->addItem(tr("HDR Cubic"), 5);
+    tmModeSelector->addItem(tr("HDR Cubic Auto"), 6);
     tmgl->addWidget(tmModeLabel, 0, 0);
     tmgl->addWidget(tmModeSelector, 0, 1);
     QLabel *gammaLabel = new QLabel(tr("Gamma"), tmapGroup);
@@ -160,15 +161,19 @@ void CMControlsWidget::onLUTModeChanged(int index) {
         blackSlider->setEnabled(false);
         break;
     case CMLUT_HDR_AUTO:
-        // Uses cubic parameters for low boost
-        gammaSlider->setEnabled(true);
+        gammaSlider->setEnabled(false);
         shadowSlider->setEnabled(false);
-        blackSlider->setEnabled(true);
+        blackSlider->setEnabled(false);
         break;
     case CMLUT_HDR_CUBIC:
         gammaSlider->setEnabled(true);
         shadowSlider->setEnabled(true);
         blackSlider->setEnabled(true);
+        break;
+    case CMLUT_HDR_CUBIC_AUTO:
+        gammaSlider->setEnabled(false);
+        shadowSlider->setEnabled(false);
+        blackSlider->setEnabled(false);
         break;
     }
 
