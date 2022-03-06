@@ -229,7 +229,7 @@ cleanup:
 // TODO: add argument to choose algorithm
 // options: 99.5th percentile balance and RAWB (https://web.stanford.edu/~sujason/ColorBalancing/robustawb.html)
 int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
-        const ColourMatrix *calib, double *red, double *blue)
+        const ColourMatrix *calib, double *temp_K, double *tint)
 {
     int status = 0;
     uint16_t width = cinfo->width;
@@ -276,7 +276,14 @@ int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
 
     // Step 4: find white balance
-    auto_white_balance(rgbf_1, width, height, red, blue);
+    double red, blue;
+    auto_white_balance(rgbf_1, width, height, &red, &blue);
+    ColourPixel sRGB_grey = {.p={1/red, 1, 1/blue}};
+    ColourPixel XYZ_grey;
+    pixel_xfrm(&sRGB_grey, &XYZ_grey, &CM_sRGB2XYZ);
+    double x = XYZ_grey.p[0] / (XYZ_grey.p[0] + XYZ_grey.p[1] + XYZ_grey.p[2]);
+    double y = XYZ_grey.p[1] / (XYZ_grey.p[0] + XYZ_grey.p[1] + XYZ_grey.p[2]);
+    colour_xy_to_temp_tint(x, y, temp_K, tint);
 
 cleanup:
     free(bayer12);

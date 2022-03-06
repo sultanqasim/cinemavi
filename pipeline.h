@@ -42,7 +42,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
         const ImagePipelineParams *params, const ColourMatrix *calib);
 
 int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
-        const ColourMatrix *calib, double *red, double *blue);
+        const ColourMatrix *calib, double *temp_K, double *tint);
 
 #ifdef __cplusplus
 }
