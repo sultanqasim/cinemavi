@@ -42,6 +42,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this->controls, &CMControlsWidget::paramsChanged, this, &MainWindow::onParamsChanged);
 
     shootButton->setText(tr("Shoot"));
+    shootButton->setHidden(true); // should only be visible when camera is running
 
     this->renderQueue = new CMRenderQueue(this);
     connect(this->renderQueue, &CMRenderQueue::imageRendered, this->imgLabel, &CMPictureLabel::setPixmap);
