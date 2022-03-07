@@ -23,6 +23,7 @@ SOURCES += \
     cmpicturelabel.cpp \
     cmrenderqueue.cpp \
     cmrenderworker.cpp \
+    cmsaveworker.cpp \
     main.cpp \
     mainwindow.cpp
 
@@ -44,6 +45,7 @@ HEADERS += \
     cmpicturelabel.h \
     cmrenderqueue.h \
     cmrenderworker.h \
+    cmsaveworker.h \
     mainwindow.h
 
 FORMS +=

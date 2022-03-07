@@ -25,7 +25,7 @@ public:
 public slots:
     void onParamsChanged();
     void onOpenRaw();
-    void onSaveTiff();
+    void onSaveImage();
     void onAutoWhiteBalance();
 
 private:

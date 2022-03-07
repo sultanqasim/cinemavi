@@ -10,11 +10,17 @@ CMRenderQueue::CMRenderQueue(QObject *parent)
     worker.moveToThread(&renderThread);
     connect(&renderThread, &QThread::started, &worker, &CMRenderWorker::render);
     connect(&worker, &CMRenderWorker::imageRendered, this, &CMRenderQueue::renderDone);
+
+    saveWorker.moveToThread(&saveThread);
+    connect(&saveThread, &QThread::started, &saveWorker, &CMSaveWorker::save);
+    connect(&saveWorker, &CMSaveWorker::imageSaved, this, &CMRenderQueue::saveDone);
 }
 
 CMRenderQueue::~CMRenderQueue() {
     renderThread.quit();
     renderThread.wait();
+    saveThread.quit();
+    saveThread.wait();
 }
 
 void CMRenderQueue::setImage(const void *raw, const CMCaptureInfo *cinfo)
@@ -96,4 +102,30 @@ bool CMRenderQueue::autoWhiteBalance(double *temp_K, double *tint)
     pipeline_auto_white_balance(this->currentRaw.data(), &this->currentCInfo,
             &this->camCalib, temp_K, tint);
     return true;
+}
+
+bool CMRenderQueue::saveImage(const QString &fileName)
+{
+    if (!imageSet || !calibSet || !paramsSet || saving)
+        return false;
+
+    saving = true;
+
+    if (imageQueued)
+        saveWorker.setParams(fileName.toStdString(), this->nextRaw.data(), this->nextCInfo,
+                             this->plParams, this->camCalib);
+    else
+        saveWorker.setParams(fileName.toStdString(), this->currentRaw.data(), this->currentCInfo,
+                             this->plParams, this->camCalib);
+
+    saveThread.start();
+    return true;
+}
+
+void CMRenderQueue::saveDone()
+{
+    saveThread.quit();
+    saveThread.wait();
+    saving = false;
+    emit imageSaved();
 }

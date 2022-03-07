@@ -14,7 +14,7 @@ public:
     void setParams(const ImagePipelineParams &params, const ColourMatrix &calib);
 
 public slots:
-    void render(void);
+    void render();
 
 signals:
     void imageRendered(const QPixmap &pm);
@@ -23,8 +23,8 @@ private:
     ImagePipelineParams plParams;
     ColourMatrix camCalib;
     const CMCaptureInfo *cinfo;
-    const void *imgRaw;
-    bool paramsSet;
+    const void *imgRaw = NULL;
+    bool paramsSet = false;
 };
 
 #endif // CMRENDERWORKER_H

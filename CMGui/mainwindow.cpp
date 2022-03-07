@@ -53,6 +53,9 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *openAction = new QAction(tr("&Open CMRAW..."), this);
     fileMenu->addAction(openAction);
     connect(openAction, &QAction::triggered, this, &MainWindow::onOpenRaw);
+    QAction *saveAction = new QAction(tr("&Save image..."), this);
+    fileMenu->addAction(saveAction);
+    connect(saveAction, &QAction::triggered, this, &MainWindow::onSaveImage);
 
     // TODO: don't hard code camera calibration
     // Matrix to convert from camera RGB to sRGB in D65 daylight illumination
@@ -97,9 +100,13 @@ void MainWindow::onOpenRaw()
     }
 }
 
-void MainWindow::onSaveTiff()
+void MainWindow::onSaveImage()
 {
-    // TODO
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "",
+                                                    tr("TIFF Files (*.tiff)"));
+    if (fileName.isNull())
+        return;
+    this->renderQueue->saveImage(fileName);
 }
 
 void MainWindow::onAutoWhiteBalance()
