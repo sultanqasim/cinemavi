@@ -36,7 +36,8 @@ void CMRenderQueue::setImage(const void *raw, const CMCaptureInfo *cinfo)
     }
 }
 
-void CMRenderQueue::setCalib(const ColourMatrix &calib) {
+void CMRenderQueue::setCalib(const ColourMatrix &calib)
+{
     this->camCalib = calib;
     this->calibSet = true;
     if (rendering)
@@ -45,7 +46,8 @@ void CMRenderQueue::setCalib(const ColourMatrix &calib) {
         this->startRender();
 }
 
-void  CMRenderQueue::setParams(const ImagePipelineParams &params) {
+void  CMRenderQueue::setParams(const ImagePipelineParams &params)
+{
     this->plParams = params;
     this->paramsSet = true;
     if (rendering)
@@ -54,7 +56,8 @@ void  CMRenderQueue::setParams(const ImagePipelineParams &params) {
         this->startRender();
 }
 
-void CMRenderQueue::startRender() {
+void CMRenderQueue::startRender()
+{
     if (!imageSet || !calibSet || !paramsSet)
         return;
     rendering = true;
@@ -65,7 +68,8 @@ void CMRenderQueue::startRender() {
     renderThread.start();
 }
 
-void CMRenderQueue::renderDone(const QPixmap &pm) {
+void CMRenderQueue::renderDone(const QPixmap &pm)
+{
     emit imageRendered(pm);
     renderThread.quit();
     renderThread.wait();
@@ -82,4 +86,14 @@ void CMRenderQueue::renderDone(const QPixmap &pm) {
     } else {
         rendering = false;
     }
+}
+
+bool CMRenderQueue::autoWhiteBalance(double *temp_K, double *tint)
+{
+    if (!imageSet || !calibSet)
+        return false;
+
+    pipeline_auto_white_balance(this->currentRaw.data(), &this->currentCInfo,
+            &this->camCalib, temp_K, tint);
+    return true;
 }

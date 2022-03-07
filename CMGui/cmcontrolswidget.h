@@ -12,14 +12,17 @@ class CMControlsWidget : public QWidget
 public:
     explicit CMControlsWidget(QWidget *parent = nullptr);
     void getParams(ImagePipelineParams *params);
+    void setWhiteBalance(double temp_K, double tint);
 
 signals:
     void paramsChanged();
+    void autoWhiteBalanceTriggered();
 
-private slots:
+public slots:
     void onLUTModeChanged(int index);
     void onSliderChanged(double val);
-    void onReset(void);
+    void onAutoWhiteBalance();
+    void onReset();
 
 private:
     CMNumberSlider *expSlider;

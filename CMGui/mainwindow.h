@@ -26,6 +26,7 @@ public slots:
     void onParamsChanged();
     void onOpenRaw();
     void onSaveTiff();
+    void onAutoWhiteBalance();
 
 private:
     Ui::MainWindow *ui;

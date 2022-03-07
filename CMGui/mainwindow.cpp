@@ -40,6 +40,8 @@ MainWindow::MainWindow(QWidget *parent)
     this->controls = new CMControlsWidget(ctrlScrollRegionWidget);
     ctrlScrollRegionWidget->setWidget(this->controls);
     connect(this->controls, &CMControlsWidget::paramsChanged, this, &MainWindow::onParamsChanged);
+    connect(this->controls, &CMControlsWidget::autoWhiteBalanceTriggered,
+            this, &MainWindow::onAutoWhiteBalance);
 
     shootButton->setText(tr("Shoot"));
     shootButton->setHidden(true); // should only be visible when camera is running
@@ -69,13 +71,15 @@ MainWindow::~MainWindow()
     ;
 }
 
-void MainWindow::onParamsChanged() {
+void MainWindow::onParamsChanged()
+{
     ImagePipelineParams params;
     this->controls->getParams(&params);
     this->renderQueue->setParams(params);
 }
 
-void MainWindow::onOpenRaw() {
+void MainWindow::onOpenRaw()
+{
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open CMRAW Image"), "",
                                                     tr("CMRAW Files (*.cmr)"));
     if (fileName.isNull())
@@ -93,6 +97,14 @@ void MainWindow::onOpenRaw() {
     }
 }
 
-void MainWindow::onSaveTiff() {
+void MainWindow::onSaveTiff()
+{
     // TODO
+}
+
+void MainWindow::onAutoWhiteBalance()
+{
+    double temp_K, tint;
+    if (this->renderQueue->autoWhiteBalance(&temp_K, &tint))
+        this->controls->setWhiteBalance(temp_K, tint);
 }

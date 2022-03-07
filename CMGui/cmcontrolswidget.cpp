@@ -1,5 +1,6 @@
 #include "cmcontrolswidget.h"
 #include <QGroupBox>
+#include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QLabel>
@@ -47,6 +48,17 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     tintSlider->setMinMax(-2, 2);
     wbgl->addWidget(tintLabel, 1, 0);
     wbgl->addWidget(tintSlider, 1, 1);
+    QLabel *awbLabel = new QLabel(tr("Auto"), wbGroup);
+    QWidget *autoButtons = new QWidget(wbGroup);
+    QHBoxLayout *autoButtonsLayout = new QHBoxLayout(autoButtons);
+    autoButtonsLayout->setContentsMargins(0, 0, 0, 0);
+    QPushButton *autoWhiteButton = new QPushButton(tr("Auto"), autoButtons);
+    QPushButton *spotWhiteButton = new QPushButton(tr("Spot"), autoButtons);
+    spotWhiteButton->setCheckable(true);
+    autoButtonsLayout->addWidget(autoWhiteButton);
+    autoButtonsLayout->addWidget(spotWhiteButton);
+    wbgl->addWidget(awbLabel, 2, 0);
+    wbgl->addWidget(autoButtons, 2, 1);
 
     QGridLayout *cgl = new QGridLayout(colourGroup);
     cgl->setColumnMinimumWidth(0, 60);
@@ -117,12 +129,14 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     connect(this->shadowSlider, &CMNumberSlider::valueChanged, this, &CMControlsWidget::onSliderChanged);
     connect(this->blackSlider, &CMNumberSlider::valueChanged, this, &CMControlsWidget::onSliderChanged);
     connect(this->tmModeSelector, &QComboBox::currentIndexChanged, this, &CMControlsWidget::onLUTModeChanged);
+    connect(autoWhiteButton, &QPushButton::clicked, this, &CMControlsWidget::onAutoWhiteBalance);
     connect(resetButton, &QPushButton::clicked, this, &CMControlsWidget::onReset);
 
     this->onReset();
 }
 
-void CMControlsWidget::onReset(void) {
+void CMControlsWidget::onReset(void)
+{
     expSlider->setValue(0);
     warmthSlider->setValue(5000);
     tintSlider->setValue(0);
@@ -136,7 +150,8 @@ void CMControlsWidget::onReset(void) {
     tmModeSelector->setCurrentIndex(CMLUT_HDR_CUBIC);
 }
 
-void CMControlsWidget::onLUTModeChanged(int index) {
+void CMControlsWidget::onLUTModeChanged(int index)
+{
     CMLUTMode lm = (CMLUTMode)index;
     switch (lm) {
     default:
@@ -180,12 +195,14 @@ void CMControlsWidget::onLUTModeChanged(int index) {
     emit paramsChanged();
 }
 
-void CMControlsWidget::onSliderChanged(double val) {
+void CMControlsWidget::onSliderChanged(double val)
+{
     (void)val;
     emit paramsChanged();
 }
 
-void CMControlsWidget::getParams(ImagePipelineParams *params) {
+void CMControlsWidget::getParams(ImagePipelineParams *params)
+{
     params->exposure = this->expSlider->value();
     params->temp_K = this->warmthSlider->value();
     params->tint = this->tintSlider->value();
@@ -197,4 +214,15 @@ void CMControlsWidget::getParams(ImagePipelineParams *params) {
     params->shadow = this->shadowSlider->value();
     params->black = this->blackSlider->value();
     params->lut_mode = (CMLUTMode)this->tmModeSelector->currentIndex();
+}
+
+void CMControlsWidget::onAutoWhiteBalance()
+{
+    emit autoWhiteBalanceTriggered();
+}
+
+void CMControlsWidget::setWhiteBalance(double temp_K, double tint)
+{
+    this->warmthSlider->setValue(temp_K);
+    this->tintSlider->setValue(tint);
 }

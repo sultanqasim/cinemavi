@@ -17,6 +17,7 @@ public:
     void setImage(const void *raw, const CMCaptureInfo *cinfo);
     void setCalib(const ColourMatrix &calib);
     void setParams(const ImagePipelineParams &params);
+    bool autoWhiteBalance(double *temp_K, double *tint);
 
 public slots:
     void renderDone(const QPixmap &pm);
