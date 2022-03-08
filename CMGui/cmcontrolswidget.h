@@ -16,12 +16,13 @@ public:
 
 signals:
     void paramsChanged();
-    void autoWhiteBalanceTriggered();
+    void autoWhiteBalanceTriggered(CMAutoWhiteMode mode);
 
 public slots:
     void onLUTModeChanged(int index);
     void onSliderChanged(double val);
-    void onAutoWhiteBalance();
+    void onBrightsWhiteBalance();
+    void onRobustWhiteBalance();
     void onReset();
 
 private:

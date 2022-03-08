@@ -27,7 +27,7 @@ public slots:
     void onParamsChanged();
     void onOpenRaw();
     void onSaveImage();
-    void onAutoWhiteBalance();
+    void onAutoWhiteBalance(CMAutoWhiteMode mode);
 
 private:
     Ui::MainWindow *ui;

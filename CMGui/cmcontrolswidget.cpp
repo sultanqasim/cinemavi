@@ -52,10 +52,12 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     QWidget *autoButtons = new QWidget(wbGroup);
     QHBoxLayout *autoButtonsLayout = new QHBoxLayout(autoButtons);
     autoButtonsLayout->setContentsMargins(0, 0, 0, 0);
-    QPushButton *autoWhiteButton = new QPushButton(tr("Auto"), autoButtons);
+    QPushButton *brightsWhiteButton = new QPushButton(tr("Brights"), autoButtons);
+    QPushButton *robustWhiteButton = new QPushButton(tr("Robust"), autoButtons);
     QPushButton *spotWhiteButton = new QPushButton(tr("Spot"), autoButtons);
     spotWhiteButton->setCheckable(true);
-    autoButtonsLayout->addWidget(autoWhiteButton);
+    autoButtonsLayout->addWidget(brightsWhiteButton);
+    autoButtonsLayout->addWidget(robustWhiteButton);
     autoButtonsLayout->addWidget(spotWhiteButton);
     wbgl->addWidget(awbLabel, 2, 0);
     wbgl->addWidget(autoButtons, 2, 1);
@@ -129,7 +131,8 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     connect(this->shadowSlider, &CMNumberSlider::valueChanged, this, &CMControlsWidget::onSliderChanged);
     connect(this->blackSlider, &CMNumberSlider::valueChanged, this, &CMControlsWidget::onSliderChanged);
     connect(this->tmModeSelector, &QComboBox::currentIndexChanged, this, &CMControlsWidget::onLUTModeChanged);
-    connect(autoWhiteButton, &QPushButton::clicked, this, &CMControlsWidget::onAutoWhiteBalance);
+    connect(brightsWhiteButton, &QPushButton::clicked, this, &CMControlsWidget::onBrightsWhiteBalance);
+    connect(robustWhiteButton, &QPushButton::clicked, this, &CMControlsWidget::onRobustWhiteBalance);
     connect(resetButton, &QPushButton::clicked, this, &CMControlsWidget::onReset);
 
     this->onReset();
@@ -216,9 +219,14 @@ void CMControlsWidget::getParams(ImagePipelineParams *params)
     params->lut_mode = (CMLUTMode)this->tmModeSelector->currentIndex();
 }
 
-void CMControlsWidget::onAutoWhiteBalance()
+void CMControlsWidget::onBrightsWhiteBalance()
 {
-    emit autoWhiteBalanceTriggered();
+    emit autoWhiteBalanceTriggered(CMWHITE_BRIGHTS);
+}
+
+void CMControlsWidget::onRobustWhiteBalance()
+{
+    emit autoWhiteBalanceTriggered(CMWHITE_ROBUST);
 }
 
 void CMControlsWidget::setWhiteBalance(double temp_K, double tint)

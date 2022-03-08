@@ -120,9 +120,9 @@ void MainWindow::onSaveImage()
     this->renderQueue->saveImage(fileName);
 }
 
-void MainWindow::onAutoWhiteBalance()
+void MainWindow::onAutoWhiteBalance(CMAutoWhiteMode mode)
 {
-    CMAutoWhiteParams params = {.awb_mode=CMWHITE_ROBUST};
+    CMAutoWhiteParams params = {.awb_mode=mode};
     double temp_K, tint;
     if (this->renderQueue->autoWhiteBalance(params, &temp_K, &tint))
         this->controls->setWhiteBalance(temp_K, tint);
