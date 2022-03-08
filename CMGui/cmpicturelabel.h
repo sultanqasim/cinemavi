@@ -17,6 +17,9 @@ public:
 public slots:
     void setPixmap(const QPixmap &pm);
 
+signals:
+    void picturePressed(uint16_t posX, uint16_t posY);
+
 private:
     QLabel *imgLabel;
     QPixmap imgMap;
@@ -24,6 +27,7 @@ private:
 
 protected:
     void resizeEvent(QResizeEvent *event);
+    void mousePressEvent(QMouseEvent *event);
 };
 
 #endif // CMPICTURELABEL_H
