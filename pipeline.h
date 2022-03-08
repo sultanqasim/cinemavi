@@ -41,8 +41,23 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
 int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
         const ImagePipelineParams *params, const ColourMatrix *calib);
 
+typedef enum {
+    CMWHITE_BRIGHTS,
+    CMWHITE_ROBUST,
+    CMWHITE_SPOT
+} CMAutoWhiteMode;
+
+typedef struct {
+    CMAutoWhiteMode awb_mode;
+
+    // for spot mode
+    uint16_t pos_x;
+    uint16_t pos_y;
+} CMAutoWhiteParams;
+
 int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
-        const ColourMatrix *calib, double *temp_K, double *tint);
+        const ColourMatrix *calib, const CMAutoWhiteParams *params,
+        double *temp_K, double *tint);
 
 #ifdef __cplusplus
 }

@@ -94,13 +94,13 @@ void CMRenderQueue::renderDone(const QPixmap &pm)
     }
 }
 
-bool CMRenderQueue::autoWhiteBalance(double *temp_K, double *tint)
+bool CMRenderQueue::autoWhiteBalance(const CMAutoWhiteParams &params, double *temp_K, double *tint)
 {
     if (!imageSet || !calibSet)
         return false;
 
     pipeline_auto_white_balance(this->currentRaw.data(), &this->currentCInfo,
-            &this->camCalib, temp_K, tint);
+            &this->camCalib, &params, temp_K, tint);
     return true;
 }
 

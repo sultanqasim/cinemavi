@@ -246,10 +246,9 @@ cleanup:
     return status;
 }
 
-// TODO: add argument to choose algorithm
-// options: 99.5th percentile balance and RAWB (https://web.stanford.edu/~sujason/ColorBalancing/robustawb.html)
 int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
-        const ColourMatrix *calib, double *temp_K, double *tint)
+        const ColourMatrix *calib, const CMAutoWhiteParams *params,
+        double *temp_K, double *tint)
 {
     int status = 0;
     uint16_t width = cinfo->width;
@@ -295,9 +294,21 @@ int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
     colour_i2f(rgb12, rgbf_0, width, height);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
 
-    // Step 4: find white balance
+    // Step 4: find white balance adjustment in sRGB space
     double red, blue;
-    auto_white_balance_robust(rgbf_1, width, height, &red, &blue);
+    switch (params->awb_mode) {
+    case CMWHITE_BRIGHTS:
+        auto_white_balance_brights(rgbf_1, width, height, &red, &blue);
+        break;
+    case CMWHITE_ROBUST:
+        auto_white_balance_robust(rgbf_1, width, height, &red, &blue);
+        break;
+    case CMWHITE_SPOT:
+        auto_white_balance_spot(rgbf_1, width, height, params->pos_x, params->pos_y, &red, &blue);
+        break;
+    }
+
+    // Compute temperature and tint from sRGB white point
     ColourPixel sRGB_grey = {.p={1/red, 1, 1/blue}};
     ColourPixel XYZ_grey;
     pixel_xfrm(&sRGB_grey, &XYZ_grey, &CM_sRGB2XYZ);
