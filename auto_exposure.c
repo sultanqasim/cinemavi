@@ -271,12 +271,41 @@ void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t he
         }
     }
 
-    for (unsigned chan = 0; chan < 3; chan++)
-        colour_sum.p[chan] /= num_pixels;
     *red = colour_sum.p[1] / colour_sum.p[0];
     *blue = colour_sum.p[1] / colour_sum.p[2];
 
     free(samp_buf);
+}
+
+// spot white balance at specified coordinates (relative to top left)
+// outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
+void auto_white_balance_spot(const float *img_rgb, uint16_t width, uint16_t height,
+        uint16_t pos_x, uint16_t pos_y, double *red, double *blue)
+{
+    if (width < 7 || height < 7) {
+        *red = 1;
+        *blue = 1;
+        return;
+    }
+
+    // we'll do a 7x7 pixel centred average
+    if (pos_x < 3) pos_x = 3;
+    if (pos_x > width - 4) pos_x = width - 4;
+    if (pos_y < 3) pos_y = 3;
+    if (pos_y > height - 4) pos_y = height - 4;
+
+    uint16_t start_x = pos_x - 3;
+    uint16_t start_y = pos_y - 3;
+    ColourPixel_f colour_sum = {};
+    for (unsigned x = start_x; x < start_x + 7; x++) {
+        for (unsigned y = start_y; y < start_y + 7; y++) {
+            for (unsigned chan = 0; chan < 3; chan++)
+                colour_sum.p[chan] += img_rgb[(y*width + x)*3 + chan];
+        }
+    }
+
+    *red = colour_sum.p[1] / colour_sum.p[0];
+    *blue = colour_sum.p[1] / colour_sum.p[2];
 }
 
 // calculate new shutter speed and gain given supplied constraints

@@ -36,6 +36,11 @@ void auto_white_balance_brights(const float *img_rgb, uint16_t width, uint16_t h
 void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t height,
         double *red, double *blue);
 
+// spot white balance at specified coordinates (relative to top left)
+// outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
+void auto_white_balance_spot(const float *img_rgb, uint16_t width, uint16_t height,
+        uint16_t pos_x, uint16_t pos_y, double *red, double *blue);
+
 typedef struct {
     double shutter_us;
     double gain_dB;
