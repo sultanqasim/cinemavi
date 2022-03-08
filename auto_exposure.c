@@ -208,7 +208,7 @@ void auto_white_balance_brights(const float *img_rgb, uint16_t width, uint16_t h
     *blue = p99[1] / p99[2];
 }
 
-static float chroma_square(ColourPixel_f *rgb)
+static float chroma_square(const ColourPixel_f *rgb)
 {
     ColourPixel_f ycrcg;
     pixel_xfrm_f(rgb, &ycrcg, &CMf_RGB2YCrCg);
@@ -217,6 +217,39 @@ static float chroma_square(ColourPixel_f *rgb)
     ycrcg.p[1] /= ycrcg.p[0];
     ycrcg.p[2] /= ycrcg.p[0];
     return ycrcg.p[1]*ycrcg.p[1] + ycrcg.p[2]*ycrcg.p[2];
+}
+
+static unsigned grey_sum(const ColourPixel_f *img_pixel, uint16_t width, uint16_t height,
+        double chroma_thresh, ColourPixel_f *colour_sum)
+{
+    unsigned num_pixels;
+    memset(colour_sum, 0, sizeof(ColourPixel_f));
+
+    if (chroma_thresh <= 0) {
+        // do old fashioned grey world
+        num_pixels = width*height;
+        for (unsigned y = 0; y < height; y++) {
+            for (unsigned x = 0; x < width; x++) {
+                for (unsigned chan = 0; chan < 3; chan++)
+                    colour_sum->p[chan] += img_pixel[y*width + x].p[chan];
+            }
+        }
+    } else {
+        // selective grey world ignoring high chrominance areas
+        double thresh = chroma_thresh * chroma_thresh;
+        num_pixels = 0;
+        for (unsigned y = 0; y < height; y++) {
+            for (unsigned x = 0; x < width; x++) {
+                if (chroma_square(&img_pixel[y*width + x]) < thresh) {
+                    num_pixels++;
+                    for (unsigned chan = 0; chan < 3; chan++)
+                        colour_sum->p[chan] += img_pixel[y*width + x].p[chan];
+                }
+            }
+        }
+    }
+
+    return num_pixels;
 }
 
 // Huo's Robust Automatic White Balance
@@ -230,10 +263,11 @@ void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t he
     uint16_t samp_height = height / samp_pitch;
 
     ColourPixel_f *samp_buf = (ColourPixel_f *)malloc(samp_width * samp_height * sizeof(ColourPixel_f));
-    if (samp_buf == NULL) {
+    ColourPixel_f *samp_buf2 = (ColourPixel_f *)malloc(samp_width * samp_height * sizeof(ColourPixel_f));
+    if (samp_buf == NULL || samp_buf2 == NULL) {
         *red = 1;
         *blue = 1;
-        return;
+        goto cleanup;
     }
 
     // populate samp_buf with downsampled image
@@ -244,37 +278,40 @@ void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t he
         }
     }
 
-    // Note: original algorithm was iterative, though I'm just doing one iteration
-    const double chroma_thresh = 0.25*0.25;
-    unsigned num_pixels = 0;
-    ColourPixel_f colour_sum = {};
-    for (unsigned y = 0; y < samp_height; y++) {
-        for (unsigned x = 0; x < samp_width; x++) {
-            if (chroma_square(&samp_buf[y*samp_width + x]) < chroma_thresh) {
-                num_pixels++;
-                for (unsigned chan = 0; chan < 3; chan++)
-                    colour_sum.p[chan] += samp_buf[y*samp_width + x].p[chan];
-            }
+    // Note: original algorithm iterated till convergence,
+    // while my version just does two iterations with different thresholds
+    ColourPixel_f colour_sum;
+    unsigned num_pixels = grey_sum(samp_buf, samp_width, samp_height, 0.25, &colour_sum);
+
+    unsigned pixel_thresh = samp_width * samp_height * 0.02;
+    if (num_pixels > pixel_thresh) {
+        *red = colour_sum.p[1] / colour_sum.p[0];
+        *blue = colour_sum.p[1] / colour_sum.p[2];
+
+        // transform original image based on first iteration
+        ColourMatrix cmat;
+        ColourMatrix_f cmat_f;
+        colour_matrix(&cmat, *red, *blue, 0, 1);
+        cmat_d2f(&cmat, &cmat_f);
+        colour_xfrm((float *)samp_buf, (float *)samp_buf2, samp_width, samp_height, &cmat_f);
+
+        // second iteration with tighter threshold
+        num_pixels = grey_sum(samp_buf2, samp_width, samp_height, 0.15, &colour_sum);
+
+        if (num_pixels > pixel_thresh) {
+            *red *= colour_sum.p[1] / colour_sum.p[0];
+            *blue *= colour_sum.p[1] / colour_sum.p[2];
         }
+    } else {
+        // fallback to classic grey world if too few original pixels were low-chroma
+        grey_sum(samp_buf, samp_width, samp_height, 0, &colour_sum);
+        *red = colour_sum.p[1] / colour_sum.p[0];
+        *blue = colour_sum.p[1] / colour_sum.p[2];
     }
 
-    // fallback to classic grey world if too few original pixels were low-chroma
-    unsigned samp_size = samp_width * samp_height;
-    if (num_pixels < (samp_size * 0.02) + 1) {
-        num_pixels = samp_size;
-        memset(&colour_sum, 0, sizeof(ColourPixel_f));
-        for (unsigned y = 0; y < samp_height; y++) {
-            for (unsigned x = 0; x < samp_width; x++) {
-                for (unsigned chan = 0; chan < 3; chan++)
-                    colour_sum.p[chan] += samp_buf[y*samp_width + x].p[chan];
-            }
-        }
-    }
-
-    *red = colour_sum.p[1] / colour_sum.p[0];
-    *blue = colour_sum.p[1] / colour_sum.p[2];
-
+cleanup:
     free(samp_buf);
+    free(samp_buf2);
 }
 
 // spot white balance at specified coordinates (relative to top left)
