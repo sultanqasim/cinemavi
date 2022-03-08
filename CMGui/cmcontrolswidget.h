@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QComboBox>
+#include <QPushButton>
 #include "cmnumberslider.h"
 #include "../pipeline.h"
 
@@ -13,6 +14,7 @@ public:
     explicit CMControlsWidget(QWidget *parent = nullptr);
     void getParams(ImagePipelineParams *params);
     void setWhiteBalance(double temp_K, double tint);
+    bool spotWhiteChecked();
 
 signals:
     void paramsChanged();
@@ -37,6 +39,7 @@ private:
     CMNumberSlider *gammaSlider;
     CMNumberSlider *shadowSlider;
     CMNumberSlider *blackSlider;
+    QPushButton *spotWhiteButton;
 };
 
 #endif // CMCONTROLSWIDGET_H

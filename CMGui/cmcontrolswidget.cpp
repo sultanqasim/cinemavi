@@ -54,7 +54,7 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     autoButtonsLayout->setContentsMargins(0, 0, 0, 0);
     QPushButton *brightsWhiteButton = new QPushButton(tr("Brights"), autoButtons);
     QPushButton *robustWhiteButton = new QPushButton(tr("Robust"), autoButtons);
-    QPushButton *spotWhiteButton = new QPushButton(tr("Spot"), autoButtons);
+    spotWhiteButton = new QPushButton(tr("Spot"), autoButtons);
     spotWhiteButton->setCheckable(true);
     autoButtonsLayout->addWidget(brightsWhiteButton);
     autoButtonsLayout->addWidget(robustWhiteButton);
@@ -233,4 +233,9 @@ void CMControlsWidget::setWhiteBalance(double temp_K, double tint)
 {
     this->warmthSlider->setValue(temp_K);
     this->tintSlider->setValue(tint);
+}
+
+bool CMControlsWidget::spotWhiteChecked()
+{
+    return this->spotWhiteButton->isChecked();
 }

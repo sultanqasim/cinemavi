@@ -27,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     this->imgLabel->setMinimumWidth(640);
     this->imgLabel->setMinimumHeight(480);
+    connect(this->imgLabel, &CMPictureLabel::picturePressed, this, &MainWindow::onPicturePressed);
 
     QWidget *ctrlWidget = new QWidget(cw);
     QVBoxLayout *vbl = new QVBoxLayout(ctrlWidget);
@@ -126,4 +127,14 @@ void MainWindow::onAutoWhiteBalance(CMAutoWhiteMode mode)
     double temp_K, tint;
     if (this->renderQueue->autoWhiteBalance(params, &temp_K, &tint))
         this->controls->setWhiteBalance(temp_K, tint);
+}
+
+void MainWindow::onPicturePressed(uint16_t posX, uint16_t posY)
+{
+    if (this->controls->spotWhiteChecked()) {
+        CMAutoWhiteParams params = {.awb_mode=CMWHITE_SPOT, .pos_x=posX, .pos_y=posY};
+        double temp_K, tint;
+        if (this->renderQueue->autoWhiteBalance(params, &temp_K, &tint))
+            this->controls->setWhiteBalance(temp_K, tint);
+    }
 }

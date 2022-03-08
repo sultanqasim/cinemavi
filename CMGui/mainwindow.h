@@ -28,6 +28,7 @@ public slots:
     void onOpenRaw();
     void onSaveImage();
     void onAutoWhiteBalance(CMAutoWhiteMode mode);
+    void onPicturePressed(uint16_t posX, uint16_t posY);
 
 private:
     Ui::MainWindow *ui;
