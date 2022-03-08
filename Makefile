@@ -1,20 +1,30 @@
 CC = gcc -std=gnu11
 CPP = g++ -std=c++11
 
-ARAVIS_DIR = $(HOME)/Downloads/aravis
-GLIB_DIR = /opt/homebrew/Cellar/glib/2.70.2
+CFLAGS = -Wall -Wextra
 
-CFLAGS = -Wall -Wextra -I$(ARAVIS_DIR)/src -I$(ARAVIS_DIR)/build/src
-CFLAGS += -I$(GLIB_DIR)/include/glib-2.0 -I$(GLIB_DIR)/lib/glib-2.0/include
+ifeq ($(OS),Windows_NT)
+    PLATFORM = Windows
+else
+    PLATFORM = $(shell sh -c 'uname 2>/dev/null || echo Unknown')
+endif
 
-LFLAGS_ARV = -L$(ARAVIS_DIR)/build/src -laravis-0.8
-LFLAGS_ARV += -L$(GLIB_DIR)/lib -lgobject-2.0
+ifeq ($(PLATFORM), Darwin)
+    DEPS_DIR = /opt/homebrew
+else
+    DEPS_DIR = /usr
+endif
+
+CFLAGS += -I$(DEPS_DIR)/include/aravis-0.8
+CFLAGS += -I$(DEPS_DIR)/include/glib-2.0 -I$(DEPS_DIR)/lib/glib-2.0/include
+
+LFLAGS_ARV += -L$(DEPS_DIR)/lib -lgobject-2.0 -laravis-0.8
 
 ifeq ($(DEBUG), 1)
-CFLAGS += -fsanitize=address -g -O0
-LFLAGS += -fsanitize=address
+    CFLAGS += -fsanitize=address -g -O0
+    LFLAGS += -fsanitize=address
 else
-CFLAGS += -O3 -ffast-math
+    CFLAGS += -O3 -ffast-math
 endif
 
 BINARIES = single_capture cmraw_process cmraw_to_dng camera_calibrator
