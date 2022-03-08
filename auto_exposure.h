@@ -28,7 +28,12 @@ uint16_t auto_black_point(const uint16_t *img_rgb, uint16_t width, uint16_t heig
 
 // grey-world inspired algorithm that balances the 99.5th percentiles of each channel
 // outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
-void auto_white_balance(const float *img_rgb, uint16_t width, uint16_t height,
+void auto_white_balance_brights(const float *img_rgb, uint16_t width, uint16_t height,
+        double *red, double *blue);
+
+// Huo's Robust Automatic White Balance
+// outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
+void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t height,
         double *red, double *blue);
 
 typedef struct {

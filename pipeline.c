@@ -277,7 +277,7 @@ int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
 
     // Step 4: find white balance
     double red, blue;
-    auto_white_balance(rgbf_1, width, height, &red, &blue);
+    auto_white_balance_robust(rgbf_1, width, height, &red, &blue);
     ColourPixel sRGB_grey = {.p={1/red, 1, 1/blue}};
     ColourPixel XYZ_grey;
     pixel_xfrm(&sRGB_grey, &XYZ_grey, &CM_sRGB2XYZ);

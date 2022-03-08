@@ -1,8 +1,24 @@
 #include <stdlib.h>
 #include <math.h>
 #include <errno.h>
+#include <string.h>
 
 #include "auto_exposure.h"
+#include "colour_xfrm.h"
+#include "ycrcg.h"
+
+static uint16_t pick_samp_pitch(uint16_t width, uint16_t height)
+{
+    uint16_t samp_pitch;
+    if (width < 50 || height < 50)
+        samp_pitch = 1;
+    else if (width < 500 || height < 500)
+        samp_pitch = 10;
+    else
+        samp_pitch = (width + height) / 100;
+
+    return samp_pitch;
+}
 
 static int u16_cmp(const void *a, const void *b)
 {
@@ -14,14 +30,7 @@ static int u16_cmp(const void *a, const void *b)
 static int exposure_percentiles_rgb(const uint16_t *img_rgb, uint16_t width, uint16_t height,
         uint16_t *percentile10, uint16_t *percentile75, uint16_t *percentile99)
 {
-    uint16_t samp_pitch;
-    if (width < 50 || height < 50)
-        samp_pitch = 1;
-    else if (width < 500 || height < 500)
-        samp_pitch = 10;
-    else
-        samp_pitch = (width + height) / 100;
-
+    uint16_t samp_pitch = pick_samp_pitch(width, height);
     uint16_t samp_width = width / samp_pitch;
     uint16_t samp_height = height / samp_pitch;
 
@@ -66,14 +75,7 @@ static int float_cmp(const void *a, const void *b)
 static int exposure_percentiles_rgb2(const float *img_rgb, uint16_t width, uint16_t height,
         float *percentile10, float *percentile75, float *percentile99)
 {
-    uint16_t samp_pitch;
-    if (width < 50 || height < 50)
-        samp_pitch = 1;
-    else if (width < 500 || height < 500)
-        samp_pitch = 10;
-    else
-        samp_pitch = (width + height) / 100;
-
+    uint16_t samp_pitch = pick_samp_pitch(width, height);
     uint16_t samp_width = width / samp_pitch;
     uint16_t samp_height = height / samp_pitch;
 
@@ -191,7 +193,7 @@ uint16_t auto_black_point(const uint16_t *img_rgb, uint16_t width, uint16_t heig
 
 // grey-world inspired algorithm that balances the 99.5th percentiles of each channel
 // outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
-void auto_white_balance(const float *img_rgb, uint16_t width, uint16_t height,
+void auto_white_balance_brights(const float *img_rgb, uint16_t width, uint16_t height,
         double *red, double *blue)
 {
     float p10[3], p75[3], p99[3];
@@ -204,6 +206,68 @@ void auto_white_balance(const float *img_rgb, uint16_t width, uint16_t height,
 
     *red = p99[1] / p99[0];
     *blue = p99[1] / p99[2];
+}
+
+static float chroma_square(ColourPixel_f *rgb)
+{
+    ColourPixel_f ycrcg;
+    pixel_xfrm_f(rgb, &ycrcg, &CMf_RGB2YCrCg);
+
+    // normalize for brightness to get chrominance
+    ycrcg.p[1] /= ycrcg.p[0];
+    ycrcg.p[2] /= ycrcg.p[0];
+    return ycrcg.p[1]*ycrcg.p[1] + ycrcg.p[2]*ycrcg.p[2];
+}
+
+// Huo's Robust Automatic White Balance
+// https://web.stanford.edu/~sujason/ColorBalancing/robustawb.html
+// outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
+void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t height,
+        double *red, double *blue)
+{
+    uint16_t samp_pitch = pick_samp_pitch(width, height);
+    uint16_t samp_width = width / samp_pitch;
+    uint16_t samp_height = height / samp_pitch;
+
+    ColourPixel_f *samp_buf = (ColourPixel_f *)malloc(samp_width * samp_height * sizeof(ColourPixel_f));
+    if (samp_buf == NULL) {
+        *red = 1;
+        *blue = 1;
+        return;
+    }
+
+    // populate samp_buf with downsampled image
+    for (unsigned y = 0; y < samp_height; y++) {
+        for (unsigned x = 0; x < samp_width; x++) {
+            memcpy(&samp_buf[y*samp_width + x], &img_rgb[(y*samp_pitch*width + x*samp_pitch)*3],
+                    sizeof(ColourPixel_f));
+        }
+    }
+
+    // Note: original algorithm was iterative, though I'm just doing one iteration
+    const double chroma_thresh = 0.25*0.25;
+    unsigned num_pixels = 0;
+    ColourPixel_f colour_sum = {};
+    for (unsigned y = 0; y < samp_height; y++) {
+        for (unsigned x = 0; x < samp_width; x++) {
+            if (chroma_square(&samp_buf[y*samp_width + x]) < chroma_thresh) {
+                num_pixels++;
+                for (unsigned chan = 0; chan < 3; chan++)
+                    colour_sum.p[chan] += samp_buf[y*samp_width + x].p[chan];
+            }
+        }
+    }
+    if (num_pixels >= 1) {
+        for (unsigned chan = 0; chan < 3; chan++)
+            colour_sum.p[chan] /= num_pixels;
+        *red = colour_sum.p[1] / colour_sum.p[0];
+        *blue = colour_sum.p[1] / colour_sum.p[2];
+    } else {
+        *red = 1;
+        *blue = 1;
+    }
+
+    free(samp_buf);
 }
 
 // calculate new shutter speed and gain given supplied constraints
