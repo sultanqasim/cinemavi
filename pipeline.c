@@ -113,17 +113,27 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     double black = params->black;
     pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow, &black);
 
-    // Step 2: Compute colour transformation matrix
-    ColourMatrix cmat, cmat2, cam_to_xyz;
+    // Compute red/blue ratios to correct from scene to D65 in cam space
+    ColourMatrix cam_to_xyz;
+    double R, B, R_D65, B_D65;
     colour_matmult33(&cam_to_xyz, &CM_sRGB2XYZ, calib);
-    colour_matrix2(&cmat, &cam_to_xyz, params->temp_K, params->tint, params->hue, params->sat);
-    colour_matmult33(&cmat2, &cmat, calib);
-    colour_matrix_white_scale(&cmat2, params->exposure);
+    colour_temp_tint_to_rb_ratio(&cam_to_xyz, params->temp_K, params->tint, &R, &B);
+    colour_temp_tint_to_rb_ratio(&cam_to_xyz, 6500, 0, &R_D65, &B_D65);
+    R /= R_D65;
+    B /= B_D65;
+
+    // Step 2: Compute colour transformation matrix
+    ColourMatrix cmat, cmat2, cmat3;
+    colour_matrix(&cmat, R, B, 0, 1);
+    colour_matmult33(&cmat2, calib, &cmat);
+    colour_matrix(&cmat, 1, 1, params->hue, params->sat);
+    colour_matmult33(&cmat3, &cmat, &cmat2);
+    colour_matrix_white_scale(&cmat3, params->exposure);
     ColourMatrix_f cmat_f;
-    cmat_d2f(&cmat2, &cmat_f);
+    cmat_d2f(&cmat3, &cmat_f);
 
     // Step 3: Pre-clip, convert to float, and colour correct
-    colour_pre_clip(rgb12, width, height, 4095, &cmat2);
+    colour_pre_clip(rgb12, width, height, 4095, &cmat3);
     colour_i2f(rgb12, rgbf_0, width, height);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
 
@@ -196,17 +206,27 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     double black = params->black;
     pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow, &black);
 
-    // Step 2: Compute colour transformation matrix
-    ColourMatrix cmat, cmat2, cam_to_xyz;
+    // Compute red/blue ratios to correct from scene to D65 in cam space
+    ColourMatrix cam_to_xyz;
+    double R, B, R_D65, B_D65;
     colour_matmult33(&cam_to_xyz, &CM_sRGB2XYZ, calib);
-    colour_matrix2(&cmat, &cam_to_xyz, params->temp_K, params->tint, params->hue, params->sat);
-    colour_matmult33(&cmat2, &cmat, calib);
-    colour_matrix_white_scale(&cmat2, params->exposure);
+    colour_temp_tint_to_rb_ratio(&cam_to_xyz, params->temp_K, params->tint, &R, &B);
+    colour_temp_tint_to_rb_ratio(&cam_to_xyz, 6500, 0, &R_D65, &B_D65);
+    R /= R_D65;
+    B /= B_D65;
+
+    // Step 2: Compute colour transformation matrix
+    ColourMatrix cmat, cmat2, cmat3;
+    colour_matrix(&cmat, R, B, 0, 1);
+    colour_matmult33(&cmat2, calib, &cmat);
+    colour_matrix(&cmat, 1, 1, params->hue, params->sat);
+    colour_matmult33(&cmat3, &cmat, &cmat2);
+    colour_matrix_white_scale(&cmat3, params->exposure);
     ColourMatrix_f cmat_f;
-    cmat_d2f(&cmat2, &cmat_f);
+    cmat_d2f(&cmat3, &cmat_f);
 
     // Step 3: Pre-clip, convert to float, colour correct, convert back to int
-    colour_pre_clip(rgb12, width, height, 4095, &cmat2);
+    colour_pre_clip(rgb12, width, height, 4095, &cmat3);
     colour_i2f(rgb12, rgbf_0, width, height);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
     colour_f2i(rgbf_1, rgb12, width, height, 4095);

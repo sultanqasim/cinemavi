@@ -69,25 +69,6 @@ void colour_matrix(ColourMatrix *cmat, double red, double blue, double hue, doub
     colour_matmult33(cmat, &work_mat, &wb_mat);
 }
 
-/* generate a colour correction matrix
- *
- * temp_K:  illuminant temperature in Kelvin (convert to D65)
- * tint:    positive boosts red/blue, negative boosts green
- * hue:     hue adjustment in radians
- * sat:     saturation is multiplied by this value
- *          1.0 means no change to saturation
- */
-void colour_matrix2(ColourMatrix *cmat, const ColourMatrix *cam_to_xyz,
-        double temp_K, double tint, double hue, double sat)
-{
-    // While resulting red and blue ratios may be less than 1, they are already heavily
-    // boosted by camera to sRGB matrix, so generally not saturating channels won't be an issue.
-    double R, B;
-    colour_temp_tint_to_rb_ratio(cam_to_xyz, temp_K, tint, &R, &B);
-
-    colour_matrix(cmat, R, B, hue, sat);
-}
-
 // convert 16-bit integer to floating point image
 void colour_i2f(const uint16_t *img_in, float *img_out, uint16_t width, uint16_t height)
 {
@@ -222,16 +203,16 @@ void colour_xy_to_temp_tint(double x, double y, double *temp_K, double *tint)
     *tint = 10.0 * sqrt(delta_x*delta_x + delta_y*delta_y) * delta_y/fabs(delta_y);
 }
 
-// Outputs ratios to multiply cam red and blue channels by to correct from specified
+// Outputs ratios to multiply source red and blue channels by to correct from specified
 // illuminant (x,y)
-void colour_illum_xy_to_rb_ratio(const ColourMatrix *cam_to_xyz,
+void colour_illum_xy_to_rb_ratio(const ColourMatrix *src_to_xyz,
         double x, double y, double *ratio_R, double *ratio_B)
 {
     // Y = 1.0, convert xyY to sRGB
     ColourPixel XYZ = {.p={x/y, 1.0, (1.0 - x - y) / y}};
     ColourPixel RGB;
     ColourMatrix xyz_to_cam;
-    colour_matinv33(&xyz_to_cam, cam_to_xyz);
+    colour_matinv33(&xyz_to_cam, src_to_xyz);
     pixel_xfrm(&XYZ, &RGB, &xyz_to_cam);
 
     *ratio_R = RGB.p[1]/RGB.p[0];
@@ -239,33 +220,33 @@ void colour_illum_xy_to_rb_ratio(const ColourMatrix *cam_to_xyz,
 }
 
 // inverse of colour_illum_xy_to_rb_ratio
-void colour_rb_ratio_to_illum_xy(const ColourMatrix *cam_to_xyz,
+void colour_rb_ratio_to_illum_xy(const ColourMatrix *src_to_xyz,
         double ratio_R, double ratio_B, double *x, double *y)
 {
     ColourPixel RGB = {.p={1/ratio_R, 1, 1/ratio_B}};
     ColourPixel XYZ;
-    pixel_xfrm(&RGB, &XYZ, cam_to_xyz);
+    pixel_xfrm(&RGB, &XYZ, src_to_xyz);
 
     *x = XYZ.p[0] / (XYZ.p[0] + XYZ.p[1] + XYZ.p[2]);
     *y = XYZ.p[1] / (XYZ.p[0] + XYZ.p[1] + XYZ.p[2]);
 }
 
-// Outputs ratios to multiply cam red and blue channels by to correct from specified
+// Outputs ratios to multiply source red and blue channels by to correct from specified
 // correlated colour temperature (in Kelvin)
-void colour_temp_tint_to_rb_ratio(const ColourMatrix *cam_to_xyz,
+void colour_temp_tint_to_rb_ratio(const ColourMatrix *src_to_xyz,
         double temp_K, double tint, double *ratio_R, double *ratio_B)
 {
     double x, y;
     colour_temp_tint_to_xy(temp_K, tint, &x, &y);
-    colour_illum_xy_to_rb_ratio(cam_to_xyz, x, y, ratio_R, ratio_B);
+    colour_illum_xy_to_rb_ratio(src_to_xyz, x, y, ratio_R, ratio_B);
 }
 
 // inverse of colour_temp_tint_to_rb_ratio
-void colour_rb_ratio_to_temp_tint(const ColourMatrix *cam_to_xyz,
+void colour_rb_ratio_to_temp_tint(const ColourMatrix *src_to_xyz,
         double ratio_R, double ratio_B, double *temp_K, double *tint)
 {
     double x, y;
-    colour_rb_ratio_to_illum_xy(cam_to_xyz, ratio_R, ratio_B, &x, &y);
+    colour_rb_ratio_to_illum_xy(src_to_xyz, ratio_R, ratio_B, &x, &y);
     colour_xy_to_temp_tint(x, y, temp_K, tint);
 }
 

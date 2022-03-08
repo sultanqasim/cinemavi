@@ -61,18 +61,6 @@ static inline void pixel_xfrm_f(const ColourPixel_f *pix_in, ColourPixel_f *pix_
  */
 void colour_matrix(ColourMatrix *cmat, double red, double blue, double hue, double sat);
 
-/* generate a colour correction matrix
- *
- * exposure:change in stops
- * temp_K:  illuminant temperature in Kelvin (convert to D65)
- * tint:    positive boosts red/blue, negative boosts green
- * hue:     hue adjustment in radians
- * sat:     saturation is multiplied by this value
- *          1.0 means no change to saturation
- */
-void colour_matrix2(ColourMatrix *cmat, const ColourMatrix *cam_to_xyz,
-        double temp_K, double tint, double hue, double sat);
-
 // convert 16-bit integer to floating point image
 void colour_i2f(const uint16_t *img_in, float *img_out, uint16_t width, uint16_t height);
 
@@ -97,22 +85,22 @@ void colour_temp_tint_to_xy(double temp_K, double tint, double *x, double *y);
 // CIE 1931 xy chromaticity to CCT
 void colour_xy_to_temp_tint(double x, double y, double *temp_K, double *tint);
 
-// Outputs ratios to multiply cam red and blue channels by to correct from specified
+// Outputs ratios to multiply source red and blue channels by to correct from specified
 // illuminant (x,y)
-void colour_illum_xy_to_rb_ratio(const ColourMatrix *cam_to_xyz,
+void colour_illum_xy_to_rb_ratio(const ColourMatrix *src_to_xyz,
         double x, double y, double *ratio_R, double *ratio_B);
 
 // inverse of colour_illum_xy_to_rb_ratio
-void colour_rb_ratio_to_illum_xy(const ColourMatrix *cam_to_xyz,
+void colour_rb_ratio_to_illum_xy(const ColourMatrix *src_to_xyz,
         double ratio_R, double ratio_B, double *x, double *y);
 
-// Outputs ratios to multiply cam red and blue channels by to correct from specified
+// Outputs ratios to multiply source red and blue channels by to correct from specified
 // correlated colour temperature (in Kelvin) and tint
-void colour_temp_tint_to_rb_ratio(const ColourMatrix *cam_to_xyz,
+void colour_temp_tint_to_rb_ratio(const ColourMatrix *src_to_xyz,
         double temp_K, double tint, double *ratio_R, double *ratio_B);
 
 // inverse of colour_temp_tint_to_rb_ratio
-void colour_rb_ratio_to_temp_tint(const ColourMatrix *cam_to_xyz,
+void colour_rb_ratio_to_temp_tint(const ColourMatrix *src_to_xyz,
         double ratio_R, double ratio_B, double *temp_K, double *tint);
 
 // determine camera space values to hit (1.0, 1.0, 1.0) in target space
