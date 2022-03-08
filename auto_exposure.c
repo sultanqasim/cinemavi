@@ -257,15 +257,24 @@ void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t he
             }
         }
     }
-    if (num_pixels >= 1) {
-        for (unsigned chan = 0; chan < 3; chan++)
-            colour_sum.p[chan] /= num_pixels;
-        *red = colour_sum.p[1] / colour_sum.p[0];
-        *blue = colour_sum.p[1] / colour_sum.p[2];
-    } else {
-        *red = 1;
-        *blue = 1;
+
+    // fallback to classic grey world if too few original pixels were low-chroma
+    unsigned samp_size = samp_width * samp_height;
+    if (num_pixels < (samp_size * 0.02) + 1) {
+        num_pixels = samp_size;
+        memset(&colour_sum, 0, sizeof(ColourPixel_f));
+        for (unsigned y = 0; y < samp_height; y++) {
+            for (unsigned x = 0; x < samp_width; x++) {
+                for (unsigned chan = 0; chan < 3; chan++)
+                    colour_sum.p[chan] += samp_buf[y*samp_width + x].p[chan];
+            }
+        }
     }
+
+    for (unsigned chan = 0; chan < 3; chan++)
+        colour_sum.p[chan] /= num_pixels;
+    *red = colour_sum.p[1] / colour_sum.p[0];
+    *blue = colour_sum.p[1] / colour_sum.p[2];
 
     free(samp_buf);
 }
