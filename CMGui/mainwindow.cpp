@@ -11,6 +11,7 @@
 #include <QAction>
 #include <QMenuBar>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <cstdlib>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -57,6 +58,8 @@ MainWindow::MainWindow(QWidget *parent)
     fileMenu->addAction(saveAction);
     connect(saveAction, &QAction::triggered, this, &MainWindow::onSaveImage);
 
+    this->setWindowTitle(tr("Cinemavi"));
+
     // TODO: don't hard code camera calibration
     // Matrix to convert from camera RGB to sRGB in D65 daylight illumination
     const ColourMatrix default_calib = {.m={
@@ -87,23 +90,31 @@ void MainWindow::onOpenRaw()
                                                     tr("CMRAW Files (*.cmr)"));
     if (fileName.isNull())
         return;
-    std::string cppFileName = fileName.toStdString();
+    std::string cmrFileName = fileName.toStdString();
 
     void *raw;
     CMRawHeader cmrh;
-    int rawStat = cmraw_load(&raw, &cmrh, cppFileName.c_str());
+    int rawStat = cmraw_load(&raw, &cmrh, cmrFileName.c_str());
     if (rawStat == 0) {
         this->renderQueue->setImage(raw, &cmrh.cinfo);
         free(raw);
+
+        // strip the full path
+        this->rawFileInfo.setFile(fileName);
+        this->setWindowTitle(tr("Cinemavi") + " - " + this->rawFileInfo.fileName());
     } else {
-        // TODO: show error dialog
+        QMessageBox::critical(this, "", tr("Error opening file"));
     }
 }
 
 void MainWindow::onSaveImage()
 {
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "",
-                                                    tr("TIFF Files (*.tiff)"));
+    // only makes sense when a raw is loaded
+    if (this->rawFileInfo.filePath().isEmpty())
+        return;
+
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"),
+            this->rawFileInfo.baseName() + ".tiff", tr("TIFF Files (*.tiff)"));
     if (fileName.isNull())
         return;
     this->renderQueue->saveImage(fileName);

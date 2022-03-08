@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QPixmap>
 #include <QScrollArea>
+#include <QFileInfo>
 #include "cmpicturelabel.h"
 #include "cmcontrolswidget.h"
 #include "cmrenderqueue.h"
@@ -33,5 +34,6 @@ private:
     CMPictureLabel *imgLabel;
     CMControlsWidget *controls;
     CMRenderQueue *renderQueue;
+    QFileInfo rawFileInfo;
 };
 #endif // MAINWINDOW_H
