@@ -10,6 +10,7 @@
 #include "cmraw.h"
 #include "auto_exposure.h"
 #include "debayer.h"
+#include "pipeline.h"
 
 static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limits,
         double *shutter, double *gain)
@@ -140,6 +141,15 @@ int main (int argc, char **argv)
                 CMRawHeader cmrh;
                 const void *raw = cinemavi_prepare_header(buffer, &cmrh,
                         camera_make, camera_model, shutter_us, gain_dB);
+
+                // automatic as-shot white balance
+                double temp_K, tint, white_x, white_y;
+                CMAutoWhiteParams awbp = {.awb_mode=CMWHITE_ROBUST};
+                pipeline_auto_white_balance(raw, &cmrh.cinfo, &awbp, &temp_K, &tint);
+                colour_temp_tint_to_xy(temp_K, tint, &white_x, &white_y);
+                cmrh.cinfo.white_x = white_x;
+                cmrh.cinfo.white_y = white_y;
+
                 if (endswith(argv[1], ".dng"))
                     cinemavi_generate_dng(raw, &cmrh, argv[1]);
                 else if (endswith(argv[1], ".tiff"))
