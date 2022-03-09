@@ -1,12 +1,12 @@
 #include "dng.h"
 #include "debayer.h"
 #include "cie_xyz.h"
+#include "cm_calibrations.h"
 
 #define TINY_DNG_WRITER_IMPLEMENTATION
 #include "tiny_dng_writer.h"
 
-int bayer_rg12p_to_dng(const void *raw, uint16_t width, uint16_t height,
-        const char *dng_name, const char *camera_model, const ColourMatrix *calib)
+int bayer_rg12p_to_dng(const void *raw, const CMRawHeader *cmrh, const char *dng_name)
 {
     tinydngwriter::DNGImage dng_image;
     tinydngwriter::DNGWriter dng_writer(false); // little endian DNG
@@ -14,13 +14,13 @@ int bayer_rg12p_to_dng(const void *raw, uint16_t width, uint16_t height,
     // set some mandatory tags
     dng_image.SetDNGVersion(1, 5, 0, 0);
     dng_image.SetOrientation(tinydngwriter::ORIENTATION_TOPLEFT);
-    dng_image.SetUniqueCameraModel(camera_model);
+    dng_image.SetUniqueCameraModel(cmrh->camera_model);
 
     dng_image.SetBigEndian(false);
     dng_image.SetSubfileType(false, false, false);
-    dng_image.SetImageWidth(width);
-    dng_image.SetImageLength(height);
-    dng_image.SetRowsPerStrip(height);
+    dng_image.SetImageWidth(cmrh->cinfo.width);
+    dng_image.SetImageLength(cmrh->cinfo.height);
+    dng_image.SetRowsPerStrip(cmrh->cinfo.height);
     dng_image.SetSamplesPerPixel(1);
     const uint16_t bpp[1] = {16};
     dng_image.SetBitsPerSample(1, bpp);
@@ -43,7 +43,7 @@ int bayer_rg12p_to_dng(const void *raw, uint16_t width, uint16_t height,
     ColourMatrix cam_to_XYZ_D65, XYZ_to_cam_D65;
     // multiplication below it backwards, but doing it the right way gives wrong colours
     // I'm not entirely sure what's happening in DNG processors
-    colour_matmult33(&cam_to_XYZ_D65, calib, &CM_sRGB2XYZ);
+    colour_matmult33(&cam_to_XYZ_D65, get_calibration(&cmrh->cinfo), &CM_sRGB2XYZ);
     colour_matinv33(&XYZ_to_cam_D65, &cam_to_XYZ_D65);
 
     // https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119021780.app3
@@ -61,11 +61,11 @@ int bayer_rg12p_to_dng(const void *raw, uint16_t width, uint16_t height,
     dng_image.SetCalibrationIlluminant2(21); // D65
     dng_image.SetColorMatrix1(3, XYZ_to_cam_StdA.m);
     dng_image.SetColorMatrix2(3, XYZ_to_cam_D65.m);
-    dng_image.SetAsShotWhiteXY(1.0 / 3, 1.0 / 3);
+    dng_image.SetAsShotWhiteXY(cmrh->cinfo.white_x, cmrh->cinfo.white_y);
 
     std::vector<uint16_t> unpacked;
-    unpacked.resize(width * height);
-    unpack12_16(unpacked.data(), raw, width * height, true);
+    unpacked.resize(cmrh->cinfo.width * cmrh->cinfo.height);
+    unpack12_16(unpacked.data(), raw, cmrh->cinfo.width * cmrh->cinfo.height, true);
     dng_image.SetImageData((uint8_t *)unpacked.data(), unpacked.size() * sizeof(uint16_t));
     dng_writer.AddImage(&dng_image);
 

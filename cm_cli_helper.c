@@ -27,11 +27,7 @@ static const ImagePipelineParams default_pipeline_params = {
 void cinemavi_generate_dng(const void *raw, const CMRawHeader *cmrh,
         const char *fname)
 {
-    uint16_t calib_index = cmrh->cinfo.calib_id;
-    if (calib_index >= CMCAL_NUM_CALIBRATIONS) calib_index = 0;
-
-    int dng_stat = bayer_rg12p_to_dng(raw, cmrh->cinfo.width, cmrh->cinfo.height, fname,
-            cmrh->camera_model, &CM_cam_calibs[calib_index]);
+    int dng_stat = bayer_rg12p_to_dng(raw, cmrh, fname);
     if (dng_stat != 0) printf("Error %d writing DNG.\n", dng_stat);
     else printf("DNG written to: %s\n", fname);
 }

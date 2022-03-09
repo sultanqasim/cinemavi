@@ -75,13 +75,6 @@ static void pipeline_auto_hdr(uint16_t *rgb12, uint16_t width, uint16_t height,
     }
 }
 
-static const ColourMatrix * get_calibration(const CMCaptureInfo *cinfo)
-{
-    uint16_t calib_index = cinfo->calib_id;
-    if (calib_index >= CMCAL_NUM_CALIBRATIONS) calib_index = 0;
-    return &CM_cam_calibs[calib_index];
-}
-
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
         const ImagePipelineParams *params)
 {
