@@ -298,7 +298,6 @@ int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
     cmat_d2f(&cmat, &cmat_f);
 
     // Step 3: Pre-clip, convert to float, colour correct
-    colour_pre_clip(rgb12, width, height, 4095, &cmat);
     colour_i2f(rgb12, rgbf_0, width, height);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
 
