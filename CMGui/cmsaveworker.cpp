@@ -9,11 +9,10 @@ CMSaveWorker::CMSaveWorker(QObject *parent)
 }
 
 void CMSaveWorker::setParams(const std::string &fileName, const void *raw, const CMCaptureInfo &cinfo,
-                             const ImagePipelineParams &params, const ColourMatrix &calib)
+                             const ImagePipelineParams &params)
 {
     this->fileName = fileName;
     this->cinfo = cinfo;
-    this->camCalib = calib;
     this->plParams = params;
     size_t rawSize = (cinfo.width * 3 / 2) * cinfo.height;
     this->imgRaw.resize(rawSize);
@@ -27,8 +26,7 @@ void CMSaveWorker::save()
 
     std::vector<uint8_t> imgRgb8;
     imgRgb8.resize(this->cinfo.width * this->cinfo.height * 3);
-    pipeline_process_image(this->imgRaw.data(), imgRgb8.data(), &this->cinfo,
-                           &this->plParams, &this->camCalib);
+    pipeline_process_image(this->imgRaw.data(), imgRgb8.data(), &this->cinfo, &this->plParams);
     rgb8_to_tiff(imgRgb8.data(), this->cinfo.width, this->cinfo.height, this->fileName.c_str());
 
     this->paramsSet = false;

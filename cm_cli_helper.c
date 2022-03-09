@@ -7,13 +7,8 @@
 #include "cm_cli_helper.h"
 #include "dng.h"
 #include "pipeline.h"
-
-// Matrix to convert from camera RGB to sRGB in D65 daylight illumination
-static const ColourMatrix default_calib = {.m={
-     1.75883, -0.68132,  0.01113,
-    -0.58876,  1.49340, -0.55559,
-     0.04679, -0.59206,  2.02246
-}};
+#include "cm_calibrations.h"
+#include "colour_xfrm.h"
 
 static const ImagePipelineParams default_pipeline_params = {
     .exposure = 0.0,
@@ -32,8 +27,11 @@ static const ImagePipelineParams default_pipeline_params = {
 void cinemavi_generate_dng(const void *raw, const CMRawHeader *cmrh,
         const char *fname)
 {
+    uint16_t calib_index = cmrh->cinfo.calib_id;
+    if (calib_index >= CMCAL_NUM_CALIBRATIONS) calib_index = 0;
+
     int dng_stat = bayer_rg12p_to_dng(raw, cmrh->cinfo.width, cmrh->cinfo.height, fname,
-            cmrh->camera_model, &default_calib);
+            cmrh->camera_model, &CM_cam_calibs[calib_index]);
     if (dng_stat != 0) printf("Error %d writing DNG.\n", dng_stat);
     else printf("DNG written to: %s\n", fname);
 }
@@ -43,8 +41,14 @@ void cinemavi_generate_tiff(const void *raw, const CMRawHeader *cmrh,
 {
     uint8_t *rgb8 = (uint8_t *)malloc(cmrh->cinfo.width * cmrh->cinfo.height * 3);
     if (rgb8 != NULL) {
+        // use as-shot white balance if specified
+        ImagePipelineParams pipeline_params = default_pipeline_params;
+        if (cmrh->cinfo.white_x > 0 || cmrh->cinfo.white_y > 0)
+            colour_xy_to_temp_tint(cmrh->cinfo.white_x, cmrh->cinfo.white_y,
+                    &pipeline_params.temp_K, &pipeline_params.tint);
+
         printf("Processing image...\n");
-        pipeline_process_image(raw, rgb8, &cmrh->cinfo, &default_pipeline_params, &default_calib);
+        pipeline_process_image(raw, rgb8, &cmrh->cinfo, &pipeline_params);
         printf("Image processed.\n");
 
         int tiff_stat = rgb8_to_tiff(rgb8, cmrh->cinfo.width, cmrh->cinfo.height, fname);

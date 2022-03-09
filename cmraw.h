@@ -37,8 +37,7 @@ typedef enum {
 typedef struct {
     uint8_t pixel_fmt;      // CMPixelFormat enum member
     uint8_t orientation;    // CMOrientation enum member
-    uint8_t reserved1;
-    uint8_t reserved2;
+    uint16_t calib_id;      // CMCameraCalibrationID enum member
     uint16_t width;
     uint16_t height;
     uint64_t ts_epoch;      // unix time
@@ -46,12 +45,14 @@ typedef struct {
     float gain_dB;
     float focal_len_mm;
     float pixel_pitch_um;
+    float white_x;          // CIE xy chromaticity of white
+    float white_y;          // for as-shot white balance
 } CMCaptureInfo;
 
 typedef struct {
     uint32_t magic;         // should be little endian 0x69564D43 (CMVi)
     CMCaptureInfo cinfo;
-    char reserved[32];
+    char reserved[24];
     char camera_make[32];
     char camera_model[32];
     char capture_software[32];

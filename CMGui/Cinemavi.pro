@@ -10,6 +10,7 @@ CONFIG += c++11
 
 SOURCES += \
     ../auto_exposure.c \
+    ../cm_calibrations.c \
     ../cmraw.c \
     ../colour_xfrm.c \
     ../convolve.c \
@@ -30,6 +31,7 @@ SOURCES += \
 HEADERS += \
     ../auto_exposure.h \
     ../cie_xyz.h \
+    ../cm_calibrations.h \
     ../cmraw.h \
     ../colour_xfrm.h \
     ../convolve.h \

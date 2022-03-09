@@ -17,7 +17,6 @@ public:
 
     // always call from a single thread
     void setImage(const void *raw, const CMCaptureInfo *cinfo);
-    void setCalib(const ColourMatrix &calib);
     void setParams(const ImagePipelineParams &params);
     bool autoWhiteBalance(const CMAutoWhiteParams &params, double *temp_K, double *tint);
     bool saveImage(const QString &fileName);
@@ -37,7 +36,6 @@ private:
     CMSaveWorker saveWorker;
 
     bool imageSet = false;
-    bool calibSet = false;
     bool paramsSet = false;
 
     bool saving = false;        // indicates a save is in progress
@@ -48,7 +46,6 @@ private:
     CMCaptureInfo currentCInfo;
     std::vector<uint8_t> nextRaw;
     CMCaptureInfo nextCInfo;
-    ColourMatrix camCalib;
     ImagePipelineParams plParams;
 
     void startRender();

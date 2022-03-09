@@ -32,7 +32,7 @@ BINARIES = single_capture cmraw_process cmraw_to_dng camera_calibrator
 all: $(BINARIES)
 
 LIB_OBJS = dng.opp colour_xfrm.o debayer.o convolve.o noise_reduction.o gamma.o
-LIB_OBJS += pipeline.o cmraw.o auto_exposure.o cm_cli_helper.o
+LIB_OBJS += pipeline.o cmraw.o auto_exposure.o cm_cli_helper.o cm_calibrations.o
 
 single_capture: single_capture.o cm_camera_helper.o $(LIB_OBJS)
 	$(CPP) $(LFLAGS) $(LFLAGS_ARV) $^ -o $@

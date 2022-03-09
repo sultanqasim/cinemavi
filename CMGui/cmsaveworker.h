@@ -10,7 +10,7 @@ class CMSaveWorker : public QObject
 public:
     explicit CMSaveWorker(QObject *parent = nullptr);
     void setParams(const std::string &fileName, const void *raw, const CMCaptureInfo &cinfo,
-                  const ImagePipelineParams &params, const ColourMatrix &calib);
+                  const ImagePipelineParams &params);
 
 public slots:
     void save();
@@ -20,7 +20,6 @@ signals:
 
 private:
     ImagePipelineParams plParams;
-    ColourMatrix camCalib;
     CMCaptureInfo cinfo;
     std::vector<uint8_t> imgRaw;
     std::string fileName;

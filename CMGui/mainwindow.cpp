@@ -61,15 +61,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     this->setWindowTitle(tr("Cinemavi"));
 
-    // TODO: don't hard code camera calibration
-    // Matrix to convert from camera RGB to sRGB in D65 daylight illumination
-    const ColourMatrix default_calib = {.m={
-         1.75883, -0.68132,  0.01113,
-        -0.58876,  1.49340, -0.55559,
-         0.04679, -0.59206,  2.02246
-    }};
-    this->renderQueue->setCalib(default_calib);
-
     this->onParamsChanged(); // force a render
 }
 
@@ -99,6 +90,14 @@ void MainWindow::onOpenRaw()
     if (rawStat == 0) {
         this->renderQueue->setImage(raw, &cmrh.cinfo);
         free(raw);
+
+        if (cmrh.cinfo.white_x > 0 || cmrh.cinfo.white_y > 0) {
+            double temp_K, tint;
+            colour_xy_to_temp_tint(cmrh.cinfo.white_x, cmrh.cinfo.white_y, &temp_K, &tint);
+            this->controls->setShotWhiteBalance(temp_K, tint);
+        } else {
+            this->controls->setShotWhiteBalance();
+        }
 
         // strip the full path
         this->rawFileInfo.setFile(fileName);

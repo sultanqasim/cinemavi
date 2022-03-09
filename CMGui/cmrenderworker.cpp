@@ -13,8 +13,7 @@ void CMRenderWorker::setImage(const void *raw, const CMCaptureInfo *cinfo) {
     this->cinfo = cinfo;
 }
 
-void CMRenderWorker::setParams(const ImagePipelineParams &params, const ColourMatrix &calib) {
-    this->camCalib = calib;
+void CMRenderWorker::setParams(const ImagePipelineParams &params) {
     this->plParams = params;
     this->paramsSet = true;
 }
@@ -28,8 +27,7 @@ void CMRenderWorker::render() {
 
     std::vector<uint8_t> imgRgb8;
     imgRgb8.resize(width_out * height_out * 3);
-    pipeline_process_image_bin22(this->imgRaw, imgRgb8.data(), this->cinfo,
-                                 &this->plParams, &this->camCalib);
+    pipeline_process_image_bin22(this->imgRaw, imgRgb8.data(), this->cinfo, &this->plParams);
     QImage img(imgRgb8.data(), width_out, height_out, width_out*3, QImage::Format_RGB888);
     QPixmap pixmap;
     pixmap.convertFromImage(img);

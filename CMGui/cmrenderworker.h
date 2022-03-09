@@ -11,7 +11,7 @@ class CMRenderWorker : public QObject
 public:
     explicit CMRenderWorker(QObject *parent = nullptr);
     void setImage(const void *raw, const CMCaptureInfo *cinfo);
-    void setParams(const ImagePipelineParams &params, const ColourMatrix &calib);
+    void setParams(const ImagePipelineParams &params);
 
 public slots:
     void render();
@@ -21,7 +21,6 @@ signals:
 
 private:
     ImagePipelineParams plParams;
-    ColourMatrix camCalib;
     const CMCaptureInfo *cinfo;
     const void *imgRaw = NULL;
     bool paramsSet = false;

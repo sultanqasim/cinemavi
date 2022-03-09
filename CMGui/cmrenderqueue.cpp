@@ -42,16 +42,6 @@ void CMRenderQueue::setImage(const void *raw, const CMCaptureInfo *cinfo)
     }
 }
 
-void CMRenderQueue::setCalib(const ColourMatrix &calib)
-{
-    this->camCalib = calib;
-    this->calibSet = true;
-    if (rendering)
-        renderQueued = true;
-    else
-        this->startRender();
-}
-
 void  CMRenderQueue::setParams(const ImagePipelineParams &params)
 {
     this->plParams = params;
@@ -64,13 +54,13 @@ void  CMRenderQueue::setParams(const ImagePipelineParams &params)
 
 void CMRenderQueue::startRender()
 {
-    if (!imageSet || !calibSet || !paramsSet)
+    if (!imageSet || !paramsSet)
         return;
     rendering = true;
 
     // prepare and launch worker
     worker.setImage(this->currentRaw.data(), &this->currentCInfo);
-    worker.setParams(this->plParams, this->camCalib);
+    worker.setParams(this->plParams);
     renderThread.start();
 }
 
@@ -96,27 +86,27 @@ void CMRenderQueue::renderDone(const QPixmap &pm)
 
 bool CMRenderQueue::autoWhiteBalance(const CMAutoWhiteParams &params, double *temp_K, double *tint)
 {
-    if (!imageSet || !calibSet)
+    if (!imageSet)
         return false;
 
     pipeline_auto_white_balance(this->currentRaw.data(), &this->currentCInfo,
-            &this->camCalib, &params, temp_K, tint);
+            &params, temp_K, tint);
     return true;
 }
 
 bool CMRenderQueue::saveImage(const QString &fileName)
 {
-    if (!imageSet || !calibSet || !paramsSet || saving)
+    if (!imageSet || !paramsSet || saving)
         return false;
 
     saving = true;
 
     if (imageQueued)
         saveWorker.setParams(fileName.toStdString(), this->nextRaw.data(), this->nextCInfo,
-                             this->plParams, this->camCalib);
+                             this->plParams);
     else
         saveWorker.setParams(fileName.toStdString(), this->currentRaw.data(), this->currentCInfo,
-                             this->plParams, this->camCalib);
+                             this->plParams);
 
     saveThread.start();
     return true;

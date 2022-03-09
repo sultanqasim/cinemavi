@@ -141,8 +141,8 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
 void CMControlsWidget::onReset(void)
 {
     expSlider->setValue(0);
-    warmthSlider->setValue(5000);
-    tintSlider->setValue(0);
+    warmthSlider->setValue(this->shotTempK);
+    tintSlider->setValue(this->shotTint);
     hueSlider->setValue(0);
     satSlider->setValue(1);
     lumaSlider->setValue(0);
@@ -233,6 +233,13 @@ void CMControlsWidget::setWhiteBalance(double temp_K, double tint)
 {
     this->warmthSlider->setValue(temp_K);
     this->tintSlider->setValue(tint);
+}
+
+void CMControlsWidget::setShotWhiteBalance(double temp_K, double tint)
+{
+    this->shotTempK = temp_K;
+    this->shotTint = tint;
+    this->setWhiteBalance(temp_K, tint);
 }
 
 bool CMControlsWidget::spotWhiteChecked()

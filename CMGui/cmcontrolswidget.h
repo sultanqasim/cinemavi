@@ -14,6 +14,7 @@ public:
     explicit CMControlsWidget(QWidget *parent = nullptr);
     void getParams(ImagePipelineParams *params);
     void setWhiteBalance(double temp_K, double tint);
+    void setShotWhiteBalance(double temp_K = 5000, double tint = 0);
     bool spotWhiteChecked();
 
 signals:
@@ -40,6 +41,8 @@ private:
     CMNumberSlider *shadowSlider;
     CMNumberSlider *blackSlider;
     QPushButton *spotWhiteButton;
+    double shotTempK = 5000;
+    double shotTint = 0;
 };
 
 #endif // CMCONTROLSWIDGET_H

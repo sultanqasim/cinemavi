@@ -10,6 +10,7 @@
 #include "gamma.h"
 #include "auto_exposure.h"
 #include "cie_xyz.h"
+#include "cm_calibrations.h"
 
 static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double black_point,
         double gamma, double shadow, double black)
@@ -74,8 +75,15 @@ static void pipeline_auto_hdr(uint16_t *rgb12, uint16_t width, uint16_t height,
     }
 }
 
+static const ColourMatrix * get_calibration(const CMCaptureInfo *cinfo)
+{
+    uint16_t calib_index = cinfo->calib_id;
+    if (calib_index >= CMCAL_NUM_CALIBRATIONS) calib_index = 0;
+    return &CM_cam_calibs[calib_index];
+}
+
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params, const ColourMatrix *calib)
+        const ImagePipelineParams *params)
 {
     int status = 0;
     uint16_t width = cinfo->width;
@@ -105,7 +113,6 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     }
     debayer33(bayer12, rgb12, width, height);
 
-
     // Step 1.5: Compute auto HDR params if requested
     CMLUTMode lut_mode = params->lut_mode;
     double gamma = params->gamma;
@@ -114,6 +121,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow, &black);
 
     // Compute red/blue ratios to correct from scene to D65 in cam space
+    const ColourMatrix *calib = get_calibration(cinfo);
     ColourMatrix cam_to_xyz;
     double R, B, R_D65, B_D65;
     colour_matmult33(&cam_to_xyz, &CM_sRGB2XYZ, calib);
@@ -163,7 +171,7 @@ cleanup:
 // use fast 2x2 binned debayering and skip noise reduction
 // output image is half height and half width
 int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
-        const ImagePipelineParams *params, const ColourMatrix *calib)
+        const ImagePipelineParams *params)
 {
     int status = 0;
     uint16_t width = cinfo->width;
@@ -207,6 +215,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
     pipeline_auto_hdr(rgb12, width, height, &lut_mode, &gamma, &shadow, &black);
 
     // Compute red/blue ratios to correct from scene to D65 in cam space
+    const ColourMatrix *calib = get_calibration(cinfo);
     ColourMatrix cam_to_xyz;
     double R, B, R_D65, B_D65;
     colour_matmult33(&cam_to_xyz, &CM_sRGB2XYZ, calib);
@@ -247,8 +256,7 @@ cleanup:
 }
 
 int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
-        const ColourMatrix *calib, const CMAutoWhiteParams *params,
-        double *temp_K, double *tint)
+        const CMAutoWhiteParams *params, double *temp_K, double *tint)
 {
     int status = 0;
     uint16_t width = cinfo->width;
@@ -284,7 +292,7 @@ int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
     height = height_out;
 
     // Step 2: Compute colour transformation matrix
-    ColourMatrix cmat = *calib;
+    ColourMatrix cmat = *get_calibration(cinfo);
     colour_matrix_white_scale(&cmat, 0.0);
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat, &cmat_f);
