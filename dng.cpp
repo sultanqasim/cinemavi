@@ -40,28 +40,22 @@ int bayer_rg12p_to_dng(const void *raw, const CMRawHeader *cmrh, const char *dng
     dng_image.SetCFAPattern(4, cpat);
 
     // Colour calibration
-    ColourMatrix cam_to_XYZ_D65, XYZ_to_cam_D65;
-    // multiplication below it backwards, but doing it the right way gives wrong colours
-    // I'm not entirely sure what's happening in DNG processors
-    colour_matmult33(&cam_to_XYZ_D65, get_calibration(&cmrh->cinfo), &CM_sRGB2XYZ);
-    colour_matinv33(&XYZ_to_cam_D65, &cam_to_XYZ_D65);
-
-    // https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119021780.app3
-    const ColourMatrix Bradford_D65_to_StdA = {.m={
-         1.2191, -0.0489,  0.4138,
-        -0.2952,  0.9106, -0.0676,
-         0.0202, -0.0251,  0.3168
-    }};
-    ColourMatrix cam_to_XYZ_StdA, XYZ_to_cam_StdA;
-    // again the matrix multiplication needs to be backwards to work properly for some reason
-    colour_matmult33(&cam_to_XYZ_StdA, &cam_to_XYZ_D65, &Bradford_D65_to_StdA);
-    colour_matinv33(&XYZ_to_cam_StdA, &cam_to_XYZ_StdA);
-
+    ColourMatrix cam_to_XYZ, XYZ_to_cam;
+    colour_matmult33(&cam_to_XYZ, &CM_sRGB2XYZ, get_calibration(&cmrh->cinfo));
+    colour_matinv33(&XYZ_to_cam, &cam_to_XYZ);
     dng_image.SetCalibrationIlluminant1(17); // StdA
     dng_image.SetCalibrationIlluminant2(21); // D65
-    dng_image.SetColorMatrix1(3, XYZ_to_cam_StdA.m);
-    dng_image.SetColorMatrix2(3, XYZ_to_cam_D65.m);
-    dng_image.SetAsShotWhiteXY(cmrh->cinfo.white_x, cmrh->cinfo.white_y);
+    dng_image.SetColorMatrix1(3, XYZ_to_cam.m);
+    dng_image.SetColorMatrix2(3, XYZ_to_cam.m);
+
+    // White balance
+    double r, b;
+    if (cmrh->cinfo.white_x > 0 || cmrh->cinfo.white_y > 0)
+        colour_illum_xy_to_rb_ratio(&cam_to_XYZ, cmrh->cinfo.white_x, cmrh->cinfo.white_y, &r, &b);
+    else // default to D50 if no white point specified
+        colour_temp_tint_to_rb_ratio(&cam_to_XYZ, 5000, 0, &r, &b);
+    ColourPixel cam_neutral_RGB = {.p={1/r, 1, 1/b}};
+    dng_image.SetAsShotNeutral(3, cam_neutral_RGB.p);
 
     std::vector<uint16_t> unpacked;
     unpacked.resize(cmrh->cinfo.width * cmrh->cinfo.height);
