@@ -1,0 +1,3 @@
+Install the following with pip:
+
+numpy scipy matplotlib opencv-python colour-science imageio colour-checker-detection
