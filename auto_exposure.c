@@ -175,20 +175,17 @@ double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
     return gain75 < gain99 ? gain75 : gain99;
 }
 
-// Returns darkest pixel value or 2% of white_val, whichever is greater
-uint16_t auto_black_point(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t white_val)
+// Returns darkest pixel value in green channel or 0.02, whichever is lower
+float auto_black_point(const float *img_rgb, uint16_t width, uint16_t height)
 {
-    uint16_t black = white_val;
+    float black = 0.02;
 
     // no overflow when width and height fit in CM_MAX_WIDTH and CM_MAX_HEIGHT
-    for (unsigned i = 0; i < width * height * 3; i += 3) {
+    for (unsigned i = 1; i < width * height * 3; i += 3) {
         if (img_rgb[i] < black) black = img_rgb[i];
-        if (img_rgb[i + 1] < black) black = img_rgb[i + 1];
-        if (img_rgb[i + 2] < black) black = img_rgb[i + 2];
     }
 
-    return black < white_val * 0.02 ? black : (uint16_t)(white_val * 0.02);
+    return black;
 }
 
 // grey-world inspired algorithm that balances the 99.5th percentiles of each channel

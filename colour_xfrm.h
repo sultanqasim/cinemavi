@@ -62,12 +62,16 @@ static inline void pixel_xfrm_f(const ColourPixel_f *pix_in, ColourPixel_f *pix_
 void colour_matrix(ColourMatrix *cmat, double red, double blue, double hue, double sat);
 
 // convert 16-bit integer to floating point image
-void colour_i2f(const uint16_t *img_in, float *img_out, uint16_t width, uint16_t height);
+void colour_i2f(const uint16_t *img_in, float *img_out, uint16_t width, uint16_t height,
+        uint16_t max);
 
 // convert floating point image to 16-bit integer
-// if bound != 0, also ensure 0 <= pixel_value <= bound
 void colour_f2i(const float *img_in, uint16_t *img_out, uint16_t width, uint16_t height,
-        uint16_t bound);
+        uint16_t max);
+
+// Adjusts camera space black point while maintaining target space white balance
+void colour_black_point(const float *img_in, float *img_out, uint16_t width, uint16_t height,
+        const ColourMatrix *cam_to_target, float black_point);
 
 // apply a colour matrix transformation to every pixel in the image
 void colour_xfrm(const float *img_in, float *img_out, uint16_t width, uint16_t height,

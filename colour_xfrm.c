@@ -70,29 +70,50 @@ void colour_matrix(ColourMatrix *cmat, double red, double blue, double hue, doub
 }
 
 // convert 16-bit integer to floating point image
-void colour_i2f(const uint16_t *img_in, float *img_out, uint16_t width, uint16_t height)
+void colour_i2f(const uint16_t *img_in, float *img_out, uint16_t width, uint16_t height,
+        uint16_t max)
 {
+    float inv_max = 1.0 / max;
     for (uint32_t i = 0; i < width * height * 3; i++)
-        img_out[i] = img_in[i];
+        img_out[i] = img_in[i] * inv_max;
 }
 
 // convert floating point image to 16-bit integer
-// if bound != 0, also ensure 0 <= pixel_value <= bound
-void colour_f2i(const float *img_in, uint16_t *img_out, uint16_t width, uint16_t height, uint16_t bound)
+void colour_f2i(const float *img_in, uint16_t *img_out, uint16_t width, uint16_t height,
+        uint16_t max)
 {
-    if (bound == 0) {
-        for (uint32_t i = 0; i < width * height * 3; i++)
-            img_out[i] = img_in[i];
-    } else {
-        for (uint32_t i = 0; i < width * height * 3; i++) {
-            float v = img_in[i];
-            if (v < 0)
-                img_out[i] = 0;
-            else if (v > bound)
-                img_out[i] = bound;
-            else
-                img_out[i] = v;
-        }
+    for (uint32_t i = 0; i < width * height * 3; i++) {
+        float v = img_in[i];
+        if (v < 0)
+            img_out[i] = 0;
+        else if (v > 1)
+            img_out[i] = max;
+        else
+            img_out[i] = v * max;
+    }
+}
+
+// Adjusts camera space black point while maintaining target space white balance
+void colour_black_point(const float *img_in, float *img_out, uint16_t width, uint16_t height,
+        const ColourMatrix *cam_to_target, float black_point)
+{
+    ColourMatrix target_to_cam;
+    ColourPixel cam_white;
+    colour_matinv33(&target_to_cam, cam_to_target);
+    colour_white_in_cam(&target_to_cam, &cam_white);
+
+    float r_bp = black_point * cam_white.p[0] / cam_white.p[1];
+    float g_bp = black_point;
+    float b_bp = black_point * cam_white.p[2] / cam_white.p[1];
+
+    float r_scale = 1.0 / (1.0 - r_bp);
+    float g_scale = 1.0 / (1.0 - g_bp);
+    float b_scale = 1.0 / (1.0 - b_bp);
+
+    for (uint32_t i = 0; i < width * height * 3; i += 3) {
+        img_out[i] = (img_in[i] - r_bp) * r_scale;
+        img_out[i + 1] = (img_in[i + 1] - g_bp) * g_scale;
+        img_out[i + 2] = (img_in[i + 2] - b_bp) * b_scale;
     }
 }
 

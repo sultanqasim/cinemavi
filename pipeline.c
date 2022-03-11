@@ -135,20 +135,21 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
 
     // Step 3: Pre-clip, convert to float, and colour correct
     colour_pre_clip(rgb12, width, height, 4095, &cmat3);
-    colour_i2f(rgb12, rgbf_0, width, height);
-    colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
+    colour_i2f(rgb12, rgbf_0, width, height, 4095);
+    float black_point = auto_black_point(rgbf_0, width, height);
+    colour_black_point(rgbf_0, rgbf_1, width, height, &cmat3, black_point);
+    colour_xfrm(rgbf_1, rgbf_0, width, height, &cmat_f);
 
     // Step 4: Noise reduction and convert back to integer
     if (params->nr_lum <= 1. && params->nr_chrom <= 1.) {
-        colour_f2i(rgbf_1, rgb12, width, height, 4095);
-    } else {
-        noise_reduction_rgb2(rgbf_1, rgbf_0, width, height, params->nr_lum, params->nr_chrom);
         colour_f2i(rgbf_0, rgb12, width, height, 4095);
+    } else {
+        noise_reduction_rgb2(rgbf_0, rgbf_1, width, height, params->nr_lum, params->nr_chrom);
+        colour_f2i(rgbf_1, rgb12, width, height, 4095);
     }
 
     // Step 5: Gamma encode
-    double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
-    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow, black);
+    pipeline_gen_lut(glut, lut_mode, 0, gamma, shadow, black);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
@@ -229,13 +230,14 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
 
     // Step 3: Pre-clip, convert to float, colour correct, convert back to int
     colour_pre_clip(rgb12, width, height, 4095, &cmat3);
-    colour_i2f(rgb12, rgbf_0, width, height);
-    colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
-    colour_f2i(rgbf_1, rgb12, width, height, 4095);
+    colour_i2f(rgb12, rgbf_0, width, height, 4095);
+    float black_point = auto_black_point(rgbf_0, width, height);
+    colour_black_point(rgbf_0, rgbf_1, width, height, &cmat3, black_point);
+    colour_xfrm(rgbf_1, rgbf_0, width, height, &cmat_f);
+    colour_f2i(rgbf_0, rgb12, width, height, 4095);
 
     // Step 4: Gamma encode
-    double black_point = auto_black_point(rgb12, width, height, 4095) / 3000.0;
-    pipeline_gen_lut(glut, lut_mode, black_point, gamma, shadow, black);
+    pipeline_gen_lut(glut, lut_mode, 0, gamma, shadow, black);
     gamma_encode(rgb12, rgb8, width, height, glut);
 
 cleanup:
@@ -290,8 +292,8 @@ int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
     ColourMatrix_f cmat_f;
     cmat_d2f(&cmat, &cmat_f);
 
-    // Step 3: Pre-clip, convert to float, colour correct
-    colour_i2f(rgb12, rgbf_0, width, height);
+    // Step 3: Convert to float, colour correct
+    colour_i2f(rgb12, rgbf_0, width, height, 4095);
     colour_xfrm(rgbf_0, rgbf_1, width, height, &cmat_f);
 
     // Step 4: find white balance adjustment in sRGB space

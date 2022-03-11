@@ -22,9 +22,8 @@ double auto_hdr_shadow(const uint16_t *img_rgb, uint16_t width, uint16_t height,
 double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
         uint16_t percentile75, uint16_t percentile99, uint16_t white);
 
-// Returns darkest pixel value or 2% of white_val, whichever is greater
-uint16_t auto_black_point(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t white_val);
+// Returns darkest pixel value in green channel or 0.02, whichever is lower
+float auto_black_point(const float *img_rgb, uint16_t width, uint16_t height);
 
 // grey-world inspired algorithm that balances the 99.5th percentiles of each channel
 // outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
