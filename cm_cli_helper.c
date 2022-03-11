@@ -13,7 +13,7 @@
 static const ImagePipelineParams default_pipeline_params = {
     .exposure = 0.0,
     .temp_K = 5000.0,
-    .tint = 0.2,
+    .tint = 0.0,
     .hue = 0.0,
     .sat = 1.0,
     .nr_lum = 150.0,
