@@ -7,6 +7,7 @@
 #include <QString>
 #include "cmrenderworker.h"
 #include "cmsaveworker.h"
+#include "cmrawimage.h"
 
 class CMRenderQueue : public QObject
 {
@@ -22,6 +23,7 @@ public:
     bool saveImage(const QString &fileName);
 
 public slots:
+    void setRawImage(const CMRawImage &img);
     void renderDone(const QPixmap &pm);
     void saveDone();
 

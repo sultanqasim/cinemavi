@@ -8,9 +8,24 @@ CONFIG += c++11
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+# Aravis
+macx {
+    LIBS += -L/opt/homebrew/lib -laravis-0.8 -lgobject-2.0
+    INCLUDEPATH += /opt/homebrew/include/aravis-0.8
+    INCLUDEPATH += /opt/homebrew/include/glib-2.0
+    INCLUDEPATH += /opt/homebrew/lib/glib-2.0/include
+}
+linux {
+    LIBS += -laravis-0.8 -lgobject-2.0
+    INCLUDEPATH += /usr/include/aravis-0.8
+    INCLUDEPATH += /usr/include/glib-2.0
+    INCLUDEPATH += /usr/lib/glib-2.0/include
+}
+
 SOURCES += \
     ../auto_exposure.c \
     ../cm_calibrations.c \
+    ../cm_camera_helper.c \
     ../cmraw.c \
     ../colour_xfrm.c \
     ../convolve.c \
@@ -19,9 +34,11 @@ SOURCES += \
     ../gamma.c \
     ../noise_reduction.c \
     ../pipeline.c \
+    cmcamerainterface.cpp \
     cmcontrolswidget.cpp \
     cmnumberslider.cpp \
     cmpicturelabel.cpp \
+    cmrawimage.cpp \
     cmrenderqueue.cpp \
     cmrenderworker.cpp \
     cmsaveworker.cpp \
@@ -32,6 +49,7 @@ HEADERS += \
     ../auto_exposure.h \
     ../cie_xyz.h \
     ../cm_calibrations.h \
+    ../cm_camera_helper.h \
     ../cmraw.h \
     ../colour_xfrm.h \
     ../convolve.h \
@@ -42,9 +60,11 @@ HEADERS += \
     ../pipeline.h \
     ../tiny_dng_writer.h \
     ../ycrcg.h \
+    cmcamerainterface.h \
     cmcontrolswidget.h \
     cmnumberslider.h \
     cmpicturelabel.h \
+    cmrawimage.h \
     cmrenderqueue.h \
     cmrenderworker.h \
     cmsaveworker.h \

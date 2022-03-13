@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <cstdint>
+#include "cmcamerainterface.h"
 #include <QMainWindow>
 #include <QLabel>
 #include <QPixmap>
@@ -26,6 +27,7 @@ public:
 public slots:
     void onParamsChanged();
     void onOpenRaw();
+    void onOpenCamera();
     void onSaveImage();
     void onAutoWhiteBalance(CMAutoWhiteMode mode);
     void onPicturePressed(uint16_t posX, uint16_t posY);
@@ -35,6 +37,7 @@ private:
     CMPictureLabel *imgLabel;
     CMControlsWidget *controls;
     CMRenderQueue *renderQueue;
+    CMCameraInterface *cameraInterface;
     QFileInfo rawFileInfo;
 };
 #endif // MAINWINDOW_H

@@ -42,6 +42,11 @@ void CMRenderQueue::setImage(const void *raw, const CMCaptureInfo *cinfo)
     }
 }
 
+void CMRenderQueue::setRawImage(const CMRawImage &img)
+{
+    this->setImage(img.getRaw(), &img.getCaptureInfo());
+}
+
 void  CMRenderQueue::setParams(const ImagePipelineParams &params)
 {
     this->plParams = params;

@@ -51,10 +51,17 @@ MainWindow::MainWindow(QWidget *parent)
     this->renderQueue = new CMRenderQueue(this);
     connect(this->renderQueue, &CMRenderQueue::imageRendered, this->imgLabel, &CMPictureLabel::setPixmap);
 
+    this->cameraInterface = new CMCameraInterface();
+    connect(this->cameraInterface, &CMCameraInterface::imageCaptured, this->renderQueue,
+            &CMRenderQueue::setRawImage);
+
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
     QAction *openAction = new QAction(tr("&Open CMRAW..."), this);
     fileMenu->addAction(openAction);
     connect(openAction, &QAction::triggered, this, &MainWindow::onOpenRaw);
+    QAction *openCameraAction = new QAction(tr("Open camera"), this);
+    fileMenu->addAction(openCameraAction);
+    connect(openCameraAction, &QAction::triggered, this, &MainWindow::onOpenCamera);
     QAction *saveAction = new QAction(tr("&Save image..."), this);
     fileMenu->addAction(saveAction);
     connect(saveAction, &QAction::triggered, this, &MainWindow::onSaveImage);
@@ -66,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    ;
+    delete this->cameraInterface;
 }
 
 void MainWindow::onParamsChanged()
@@ -88,6 +95,7 @@ void MainWindow::onOpenRaw()
     CMRawHeader cmrh;
     int rawStat = cmraw_load(&raw, &cmrh, cmrFileName.c_str());
     if (rawStat == 0) {
+        this->cameraInterface->stopCapture();
         this->renderQueue->setImage(raw, &cmrh.cinfo);
         free(raw);
 
@@ -105,6 +113,17 @@ void MainWindow::onOpenRaw()
     } else {
         QMessageBox::critical(this, "", tr("Error opening file"));
     }
+}
+
+void MainWindow::onOpenCamera()
+{
+    if (!this->cameraInterface->cameraAvailable()) {
+        QMessageBox::critical(this, "", tr("Error opening camera"));
+        return;
+    }
+    this->cameraInterface->setExposure(30000, 5);
+    this->cameraInterface->setFrameRate(16);
+    this->cameraInterface->startCapture();
 }
 
 void MainWindow::onSaveImage()
