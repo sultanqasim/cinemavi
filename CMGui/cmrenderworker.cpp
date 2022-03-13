@@ -21,6 +21,11 @@ void CMRenderWorker::render() {
     assert(this->paramsSet);
     assert(this->imgRaw != NULL);
 
+    if (this->imgRaw->isEmpty()) {
+        emit imageRendered(QPixmap());
+        return;
+    }
+
     uint16_t width_out = this->imgRaw->getCaptureInfo().width / 2;
     uint16_t height_out = this->imgRaw->getCaptureInfo().height / 2;
 

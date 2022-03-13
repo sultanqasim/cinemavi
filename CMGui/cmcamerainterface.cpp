@@ -186,3 +186,18 @@ void CMCameraInterface::captureLoop()
         } else break;
     }
 }
+
+const std::string & CMCameraInterface::getCameraMake()
+{
+    return this->cameraMake;
+}
+
+const std::string & CMCameraInterface::getCameraModel()
+{
+    return this->cameraModel;
+}
+
+QString CMCameraInterface::getCameraName()
+{
+    return QString::fromStdString(this->cameraMake + " " + this->cameraModel);
+}

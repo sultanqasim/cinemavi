@@ -34,6 +34,7 @@ public slots:
     void onPicturePressed(uint16_t posX, uint16_t posY);
     void onImageCaptured(const CMRawImage &img);
     void onExposureUpdate(double changeFactor);
+    void onClose();
 
 private:
     Ui::MainWindow *ui;

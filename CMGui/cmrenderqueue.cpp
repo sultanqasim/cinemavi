@@ -14,6 +14,8 @@ CMRenderQueue::CMRenderQueue(QObject *parent)
     saveWorker.moveToThread(&saveThread);
     connect(&saveThread, &QThread::started, &saveWorker, &CMSaveWorker::save);
     connect(&saveWorker, &CMSaveWorker::imageSaved, this, &CMRenderQueue::saveDone);
+
+    qRegisterMetaType<CMRawImage>("CMRawImage");
 }
 
 CMRenderQueue::~CMRenderQueue() {
@@ -25,7 +27,6 @@ CMRenderQueue::~CMRenderQueue() {
 
 void CMRenderQueue::setImage(const CMRawImage &img)
 {
-    this->imageSet = true;
     if (rendering) {
         this->nextRaw = img;
         imageQueued = true;
@@ -48,7 +49,7 @@ void  CMRenderQueue::setParams(const ImagePipelineParams &params)
 
 void CMRenderQueue::startRender()
 {
-    if (!imageSet || !paramsSet)
+    if (!paramsSet)
         return;
     rendering = true;
 
@@ -79,7 +80,7 @@ void CMRenderQueue::renderDone(const QPixmap &pm)
 
 bool CMRenderQueue::autoWhiteBalance(const CMAutoWhiteParams &params, double *temp_K, double *tint)
 {
-    if (!imageSet)
+    if (this->currentRaw.isEmpty())
         return false;
 
     pipeline_auto_white_balance(this->currentRaw.getRaw(), &this->currentRaw.getCaptureInfo(),
@@ -89,7 +90,7 @@ bool CMRenderQueue::autoWhiteBalance(const CMAutoWhiteParams &params, double *te
 
 bool CMRenderQueue::saveImage(const QString &fileName)
 {
-    if (!imageSet || !paramsSet || saving)
+    if (this->currentRaw.isEmpty() || !paramsSet || saving)
         return false;
 
     saving = true;
@@ -109,4 +110,10 @@ void CMRenderQueue::saveDone()
     saveThread.wait();
     saving = false;
     emit imageSaved();
+}
+
+// Enqueues set image operation at end of signal queue
+void CMRenderQueue::setImageLater(const CMRawImage &img)
+{
+    QMetaObject::invokeMethod(this, "setImage", Qt::QueuedConnection, Q_ARG(CMRawImage, img));
 }

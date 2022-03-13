@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QThread>
 #include <QMutex>
+#include <QString>
 #include "cmrawimage.h"
 #include "../auto_exposure.h"
 
@@ -21,6 +22,9 @@ public:
     void updateExposure(double changeFactor);
     void startCapture();
     void stopCapture();
+    const std::string & getCameraMake();
+    const std::string & getCameraModel();
+    QString getCameraName();
 
 signals:
     void imageCaptured(CMRawImage &img);

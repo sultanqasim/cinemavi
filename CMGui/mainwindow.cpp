@@ -70,6 +70,9 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *saveAction = new QAction(tr("&Save image..."), this);
     fileMenu->addAction(saveAction);
     connect(saveAction, &QAction::triggered, this, &MainWindow::onSaveImage);
+    QAction *closeAction = new QAction(tr("&Close image/camera"), this);
+    fileMenu->addAction(closeAction);
+    connect(closeAction, &QAction::triggered, this, &MainWindow::onClose);
 
     this->setWindowTitle(tr("Cinemavi"));
 
@@ -105,7 +108,7 @@ void MainWindow::onOpenRaw()
         CMRawImage img;
         this->cameraInterface->stopCapture();
         img.setImage(raw, cmrh.cinfo);
-        this->renderQueue->setImage(img);
+        this->renderQueue->setImageLater(img);
         free(raw);
 
         if (cmrh.cinfo.white_x > 0 || cmrh.cinfo.white_y > 0) {
@@ -133,6 +136,8 @@ void MainWindow::onOpenCamera()
     this->cameraInterface->setExposure(30000, 5);
     this->cameraInterface->setFrameRate(16);
     this->cameraInterface->startCapture();
+    this->setWindowTitle(tr("Cinemavi") + " - " + this->cameraInterface->getCameraName());
+    this->rawFileInfo.setFile("");
 }
 
 void MainWindow::onSaveImage()
@@ -175,4 +180,12 @@ void MainWindow::onImageCaptured(const CMRawImage &img)
 void MainWindow::onExposureUpdate(double changeFactor)
 {
     this->cameraInterface->updateExposure(changeFactor);
+}
+
+void MainWindow::onClose()
+{
+    CMRawImage emptyImg;
+    this->cameraInterface->stopCapture();
+    this->renderQueue->setImageLater(emptyImg);
+    this->setWindowTitle(tr("Cinemavi"));
 }

@@ -12,6 +12,7 @@ public:
     void setImage(const void *raw, const CMCaptureInfo &cinfo);
     const void *getRaw() const;
     const CMCaptureInfo &getCaptureInfo() const;
+    bool isEmpty() const;
 
 private:
     std::vector<uint8_t> rawData;

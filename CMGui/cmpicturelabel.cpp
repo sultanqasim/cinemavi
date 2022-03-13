@@ -75,5 +75,7 @@ void CMPictureLabel::regenPixmap(const QSize &size) {
     if (!this->imgMap.isNull()) {
         QPixmap pm = this->imgMap.scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         this->imgLabel->setPixmap(pm);
+    } else {
+        this->imgLabel->setPixmap(this->imgMap);
     }
 }

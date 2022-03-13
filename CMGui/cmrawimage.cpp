@@ -3,7 +3,7 @@
 
 CMRawImage::CMRawImage()
 {
-
+    memset(&this->cinfo, 0, sizeof(this->cinfo));
 }
 
 void CMRawImage::setImage(const void *raw, const CMCaptureInfo &cinfo)
@@ -31,4 +31,10 @@ const void * CMRawImage::getRaw() const
 const CMCaptureInfo & CMRawImage::getCaptureInfo() const
 {
     return this->cinfo;
+}
+
+bool CMRawImage::isEmpty() const
+{
+    uint32_t imSz = this->cinfo.width * this->cinfo.height;
+    return imSz == 0;
 }
