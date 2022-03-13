@@ -21,6 +21,7 @@ public:
     bool autoWhiteBalance(const CMAutoWhiteParams &params, double *temp_K, double *tint);
     bool saveImage(const QString &fileName);
     void setImageLater(const CMRawImage &img);
+    bool hasImage();
 
 public slots:
     void setImage(const CMRawImage &img);

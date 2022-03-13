@@ -12,6 +12,7 @@
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QDateTime>
 #include <cstdlib>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -143,12 +144,19 @@ void MainWindow::onOpenCamera()
 
 void MainWindow::onSaveImage()
 {
-    // only makes sense when a raw is loaded
-    if (this->rawFileInfo.filePath().isEmpty())
+    // only makes sense when there's an image to save
+    if (!this->renderQueue->hasImage())
         return;
 
+    QString baseName;
+    if (this->rawFileInfo.filePath().isEmpty()) {
+        QDateTime t = QDateTime::currentDateTime();
+        baseName = "CMIMG_" + t.toString("yyyy-MM-dd_hh-mm-ss");
+    } else
+        baseName = this->rawFileInfo.baseName();
+
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"),
-            this->rawFileInfo.baseName() + ".tiff", tr("TIFF Files (*.tiff)"));
+            baseName + ".tiff", tr("TIFF Files (*.tiff)"));
     if (fileName.isNull())
         return;
     this->renderQueue->saveImage(fileName);

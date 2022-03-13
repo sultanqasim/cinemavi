@@ -117,3 +117,11 @@ void CMRenderQueue::setImageLater(const CMRawImage &img)
 {
     QMetaObject::invokeMethod(this, "setImage", Qt::QueuedConnection, Q_ARG(CMRawImage, img));
 }
+
+bool CMRenderQueue::hasImage()
+{
+    if (imageQueued)
+        return !this->nextRaw.isEmpty();
+    else
+        return !this->nextRaw.isEmpty();
+}
