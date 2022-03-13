@@ -136,6 +136,7 @@ void MainWindow::onOpenCamera()
     this->cameraInterface->setExposure(30000, 5);
     this->cameraInterface->setFrameRate(16);
     this->cameraInterface->startCapture();
+    this->controls->setShotWhiteBalance();
     this->setWindowTitle(tr("Cinemavi") + " - " + this->cameraInterface->getCameraName());
     this->rawFileInfo.setFile("");
 }
@@ -187,5 +188,6 @@ void MainWindow::onClose()
     CMRawImage emptyImg;
     this->cameraInterface->stopCapture();
     this->renderQueue->setImageLater(emptyImg);
+    this->controls->setShotWhiteBalance();
     this->setWindowTitle(tr("Cinemavi"));
 }
