@@ -154,7 +154,7 @@ void CMCameraInterface::stopCapture()
 void CMCameraInterface::captureLoop()
 {
     while (this->capturing) {
-        ArvBuffer *buf = arv_stream_pop_buffer(this->stream);
+        ArvBuffer *buf = arv_stream_timeout_pop_buffer(this->stream, 300000);
         if (ARV_IS_BUFFER(buf)) {
             CMRawImage img;
             CMCaptureInfo cinfo = {};
