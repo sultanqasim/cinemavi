@@ -11,8 +11,7 @@ extern "C" {
 void cinemavi_camera_configure_exposure(ArvCamera *camera, double shutter_us,
         double gain_db, GError **error);
 
-void cinemavi_camera_configure(ArvCamera *camera, double shutter_us, double gain_db,
-        GError **error);
+void cinemavi_camera_configure(ArvCamera *camera, GError **error);
 
 const void * cinemavi_prepare_header(ArvBuffer *buffer, CMRawHeader *cmrh,
         const char *cam_make, const char *cam_model, float shutter, float gain);

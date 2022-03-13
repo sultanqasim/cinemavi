@@ -22,7 +22,7 @@ static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limit
     int ret = 0;
     int iterations = 0;
 
-    cinemavi_camera_configure(camera, params.shutter_us, params.gain_dB, &error);
+    cinemavi_camera_configure_exposure(camera, params.shutter_us, params.gain_dB, &error);
 
     while (iterations < 10 && (change_factor < 0.95 || change_factor > 1.05)) {
         if (error) {
@@ -103,6 +103,10 @@ int main (int argc, char **argv)
         const char *camera_model = arv_camera_get_model_name(camera, NULL);
         printf("Found camera '%s %s'\n", camera_make, camera_model);
 
+        // Initial configuration
+        cinemavi_camera_configure(camera, &error);
+        if (error) goto err;
+
         // Auto exposure settings
         ExposureLimits limits;
         limits.shutter_targ_low = 8000;
@@ -123,9 +127,7 @@ int main (int argc, char **argv)
         }
 
         printf("Shutter: %.1f us Gain: %.2f dB\n", shutter_us, gain_dB);
-
-        // Set configuration
-        cinemavi_camera_configure(camera, shutter_us, gain_dB, &error);
+        cinemavi_camera_configure_exposure(camera, shutter_us, gain_dB, &error);
         if (error) goto err;
 
         // Acquire a single buffer

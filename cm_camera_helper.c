@@ -13,8 +13,7 @@ void cinemavi_camera_configure_exposure(ArvCamera *camera, double shutter_us,
     if (!(*error)) arv_camera_set_exposure_time(camera, shutter_us, error);
 }
 
-void cinemavi_camera_configure(ArvCamera *camera, double shutter_us, double gain_db,
-        GError **error)
+void cinemavi_camera_configure(ArvCamera *camera, GError **error)
 {
     int wmin, wmax, hmin, hmax;
 
@@ -25,12 +24,11 @@ void cinemavi_camera_configure(ArvCamera *camera, double shutter_us, double gain
     if (!(*error)) arv_camera_set_pixel_format(camera, ARV_PIXEL_FORMAT_BAYER_RG_12P, error);
     if (!(*error)) arv_camera_set_binning(camera, 1, 1, error);
 
-    // Exposure
+    // Disable auto exposure
     if (!(*error)) arv_camera_set_gain_auto(camera, ARV_AUTO_OFF, error);
     if (!(*error)) arv_camera_set_exposure_time_auto(camera, ARV_AUTO_OFF, error);
-    cinemavi_camera_configure_exposure(camera, shutter_us, gain_db, error);
 
-    // White balance (make it neutral)
+    // Disable auto white balance and make it neutral
     if (!(*error)) arv_camera_set_string(camera, "BalanceWhiteAuto", "Continuous", error);
     if (!(*error)) arv_camera_set_string(camera, "BalanceWhiteAuto", "Off", error);
     if (!(*error)) arv_camera_set_string(camera, "BalanceRatioSelector", "Red", error);
