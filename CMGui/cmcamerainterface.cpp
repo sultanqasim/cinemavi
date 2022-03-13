@@ -142,6 +142,7 @@ void CMCameraInterface::startCapture()
 void CMCameraInterface::stopCapture()
 {
     GError *error = NULL;
+    if (!this->capturing) return;
     if (!ARV_IS_CAMERA(this->camera)) return;
     this->capturing = false;
     arv_camera_stop_acquisition(this->camera, &error);
