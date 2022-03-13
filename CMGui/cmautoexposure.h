@@ -31,7 +31,9 @@ private:
     ImagePipelineParams plParams;
     volatile bool calculating = false;
     volatile bool done = false;
+    unsigned delayCounter = 0;
 
+    const double delayFrames = 2;
     const double filterFactor = 0.5;
 };
 

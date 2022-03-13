@@ -23,7 +23,9 @@ void CMAutoExposure::setParams(const ImagePipelineParams &params)
 
 void CMAutoExposure::setImage(const CMRawImage &img)
 {
-    if (!this->calculating) {
+    this->delayCounter++;
+    if (this->delayCounter >= this->delayFrames && !this->calculating) {
+        this->delayCounter = 0;
         this->calculating = true;
         this->rawImg = img;
         this->workSem.release();
