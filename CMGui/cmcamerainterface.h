@@ -34,7 +34,7 @@ private:
     ArvStream *stream;
     std::string cameraMake;
     std::string cameraModel;
-    bool capturing = false;
+    volatile bool capturing = false;
     double shutterMin;
     double shutterMax;
     double gainMin;
