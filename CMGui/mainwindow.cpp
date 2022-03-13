@@ -49,11 +49,16 @@ MainWindow::MainWindow(QWidget *parent)
     shootButton->setHidden(true); // should only be visible when camera is running
 
     this->renderQueue = new CMRenderQueue(this);
-    connect(this->renderQueue, &CMRenderQueue::imageRendered, this->imgLabel, &CMPictureLabel::setPixmap);
+    connect(this->renderQueue, &CMRenderQueue::imageRendered,
+            this->imgLabel, &CMPictureLabel::setPixmap);
 
     this->cameraInterface = new CMCameraInterface();
-    connect(this->cameraInterface, &CMCameraInterface::imageCaptured, this->renderQueue,
-            &CMRenderQueue::setRawImage);
+    connect(this->cameraInterface, &CMCameraInterface::imageCaptured,
+            this, &MainWindow::onImageCaptured);
+
+    this->autoExposure = new CMAutoExposure();
+    connect(this->autoExposure, &CMAutoExposure::exposureChangeCalculated,
+            this, &MainWindow::onExposureUpdate);
 
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
     QAction *openAction = new QAction(tr("&Open CMRAW..."), this);
@@ -74,6 +79,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete this->cameraInterface;
+    delete this->autoExposure;
 }
 
 void MainWindow::onParamsChanged()
@@ -81,6 +87,7 @@ void MainWindow::onParamsChanged()
     ImagePipelineParams params;
     this->controls->getParams(&params);
     this->renderQueue->setParams(params);
+    this->autoExposure->setParams(params);
 }
 
 void MainWindow::onOpenRaw()
@@ -95,8 +102,10 @@ void MainWindow::onOpenRaw()
     CMRawHeader cmrh;
     int rawStat = cmraw_load(&raw, &cmrh, cmrFileName.c_str());
     if (rawStat == 0) {
+        CMRawImage img;
         this->cameraInterface->stopCapture();
-        this->renderQueue->setImage(raw, &cmrh.cinfo);
+        img.setImage(raw, cmrh.cinfo);
+        this->renderQueue->setImage(img);
         free(raw);
 
         if (cmrh.cinfo.white_x > 0 || cmrh.cinfo.white_y > 0) {
@@ -155,4 +164,15 @@ void MainWindow::onPicturePressed(uint16_t posX, uint16_t posY)
         if (this->renderQueue->autoWhiteBalance(params, &temp_K, &tint))
             this->controls->setWhiteBalance(temp_K, tint);
     }
+}
+
+void MainWindow::onImageCaptured(const CMRawImage &img)
+{
+    this->renderQueue->setImage(img);
+    this->autoExposure->setImage(img);
+}
+
+void MainWindow::onExposureUpdate(double changeFactor)
+{
+    this->cameraInterface->updateExposure(changeFactor);
 }

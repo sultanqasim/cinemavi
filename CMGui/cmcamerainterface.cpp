@@ -106,6 +106,24 @@ void CMCameraInterface::setExposure(double shutter_us, double gain_dB)
     }
 }
 
+void CMCameraInterface::updateExposure(double changeFactor)
+{
+    ExposureLimits limits;
+    limits.shutter_targ_low = 8000;
+    limits.shutter_targ_high = 30000;
+    limits.gain_targ_low = 5;
+    limits.gain_targ_high = 15;
+    limits.shutter_min = this->shutterMin;
+    limits.shutter_max = 250000; // minimum 4 fps
+    limits.gain_min = this->gainMin;
+    limits.gain_max = this->gainMax;
+
+    ExposureParams currentExp = {.shutter_us = this->shutter, .gain_dB = this->gain};
+    ExposureParams newExp;
+    calculate_exposure(&currentExp, &newExp, &limits, changeFactor);
+    this->setExposure(newExp.shutter_us, newExp.gain_dB);
+}
+
 void CMCameraInterface::startCapture()
 {
     GError *error = NULL;

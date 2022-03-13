@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QPixmap>
+#include "cmrawimage.h"
 #include "../pipeline.h"
 
 class CMRenderWorker : public QObject
@@ -10,7 +11,7 @@ class CMRenderWorker : public QObject
     Q_OBJECT
 public:
     explicit CMRenderWorker(QObject *parent = nullptr);
-    void setImage(const void *raw, const CMCaptureInfo *cinfo);
+    void setImage(const CMRawImage *img);
     void setParams(const ImagePipelineParams &params);
 
 public slots:
@@ -21,8 +22,7 @@ signals:
 
 private:
     ImagePipelineParams plParams;
-    const CMCaptureInfo *cinfo;
-    const void *imgRaw = NULL;
+    const CMRawImage *imgRaw = NULL;
     bool paramsSet = false;
 };
 

@@ -11,6 +11,7 @@
 #include "cmpicturelabel.h"
 #include "cmcontrolswidget.h"
 #include "cmrenderqueue.h"
+#include "cmautoexposure.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -31,6 +32,8 @@ public slots:
     void onSaveImage();
     void onAutoWhiteBalance(CMAutoWhiteMode mode);
     void onPicturePressed(uint16_t posX, uint16_t posY);
+    void onImageCaptured(const CMRawImage &img);
+    void onExposureUpdate(double changeFactor);
 
 private:
     Ui::MainWindow *ui;
@@ -38,6 +41,7 @@ private:
     CMControlsWidget *controls;
     CMRenderQueue *renderQueue;
     CMCameraInterface *cameraInterface;
+    CMAutoExposure *autoExposure;
     QFileInfo rawFileInfo;
 };
 #endif // MAINWINDOW_H

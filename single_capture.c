@@ -38,43 +38,21 @@ static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limit
             break;
         }
 
-        ArvPixelFormat pfmt = arv_buffer_get_image_pixel_format(buffer);
-        if (pfmt != ARV_PIXEL_FORMAT_BAYER_RG_12P) {
+        CMRawHeader cmrh;
+        const void *raw = cinemavi_prepare_header(buffer, &cmrh, NULL, NULL,
+                params.shutter_us, params.gain_dB);
+
+        if (raw == NULL) {
             ret = -EINVAL;
             g_clear_object(&buffer);
             break;
         }
 
-        unsigned int width = arv_buffer_get_image_width(buffer);
-        unsigned int height = arv_buffer_get_image_height(buffer);
-        uint16_t rgw = width >> 1;
-        uint16_t rgh = height >> 1;
-
-
-        size_t imsz;
-        const void *imbuf = (const void *)arv_buffer_get_data(buffer, &imsz);
-
-        uint16_t *bayer12 = (uint16_t *)malloc(width * height * sizeof(uint16_t));
-        if (bayer12 == NULL) {
-            ret = -ENOMEM;
+        ret = pipeline_auto_exposure(raw, &cmrh.cinfo, &default_pipeline_params, &change_factor);
+        if (ret) {
             g_clear_object(&buffer);
             break;
         }
-        unpack12_16(bayer12, imbuf, width * height, false);
-        g_clear_object(&buffer);
-
-        uint16_t *img_rgb = (uint16_t *)malloc(rgw * rgh * 3 * sizeof(uint16_t));
-        if (img_rgb == NULL) {
-            ret = -ENOMEM;
-            free(bayer12);
-            break;
-        }
-
-        debayer22_binned(bayer12, img_rgb, width, height);
-        free(bayer12);
-
-        change_factor = auto_exposure(img_rgb, rgw, rgh, 1300, 3700, 4090);
-        free(img_rgb);
 
         calculate_exposure(&params, &params2, limits, change_factor);
         params = params2;

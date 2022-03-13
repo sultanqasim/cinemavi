@@ -8,9 +8,8 @@ CMRenderWorker::CMRenderWorker(QObject *parent)
 
 }
 
-void CMRenderWorker::setImage(const void *raw, const CMCaptureInfo *cinfo) {
-    this->imgRaw = raw;
-    this->cinfo = cinfo;
+void CMRenderWorker::setImage(const CMRawImage *img) {
+    this->imgRaw = img;
 }
 
 void CMRenderWorker::setParams(const ImagePipelineParams &params) {
@@ -20,14 +19,15 @@ void CMRenderWorker::setParams(const ImagePipelineParams &params) {
 
 void CMRenderWorker::render() {
     assert(this->paramsSet);
-    assert(this->imgRaw != NULL && this->cinfo != NULL);
+    assert(this->imgRaw != NULL);
 
-    uint16_t width_out = this->cinfo->width / 2;
-    uint16_t height_out = this->cinfo->height / 2;
+    uint16_t width_out = this->imgRaw->getCaptureInfo().width / 2;
+    uint16_t height_out = this->imgRaw->getCaptureInfo().height / 2;
 
     std::vector<uint8_t> imgRgb8;
     imgRgb8.resize(width_out * height_out * 3);
-    pipeline_process_image_bin22(this->imgRaw, imgRgb8.data(), this->cinfo, &this->plParams);
+    pipeline_process_image_bin22(this->imgRaw->getRaw(), imgRgb8.data(),
+                                 &this->imgRaw->getCaptureInfo(), &this->plParams);
     QImage img(imgRgb8.data(), width_out, height_out, width_out*3, QImage::Format_RGB888);
     QPixmap pixmap;
     pixmap.convertFromImage(img);

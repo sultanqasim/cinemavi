@@ -17,13 +17,12 @@ public:
     ~CMRenderQueue();
 
     // always call from a single thread
-    void setImage(const void *raw, const CMCaptureInfo *cinfo);
     void setParams(const ImagePipelineParams &params);
     bool autoWhiteBalance(const CMAutoWhiteParams &params, double *temp_K, double *tint);
     bool saveImage(const QString &fileName);
 
 public slots:
-    void setRawImage(const CMRawImage &img);
+    void setImage(const CMRawImage &img);
     void renderDone(const QPixmap &pm);
     void saveDone();
 
@@ -44,10 +43,8 @@ private:
     bool rendering = false;     // indicates a render is in progress
     bool imageQueued = false;   // indicates if next image needs to be made current
     bool renderQueued = false;  // indicates if a new render should be done after last finishes
-    std::vector<uint8_t> currentRaw;
-    CMCaptureInfo currentCInfo;
-    std::vector<uint8_t> nextRaw;
-    CMCaptureInfo nextCInfo;
+    CMRawImage currentRaw;
+    CMRawImage nextRaw;
     ImagePipelineParams plParams;
 
     void startRender();

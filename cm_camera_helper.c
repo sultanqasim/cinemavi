@@ -59,8 +59,10 @@ const void * cinemavi_prepare_header(ArvBuffer *buffer, CMRawHeader *cmrh,
     else
         return NULL;
 
-    snprintf(cmrh->camera_make, sizeof(cmrh->camera_make), "%s", cam_make);
-    snprintf(cmrh->camera_model, sizeof(cmrh->camera_model), "%s", cam_model);
+    if (cam_make != NULL)
+        snprintf(cmrh->camera_make, sizeof(cmrh->camera_make), "%s", cam_make);
+    if (cam_model != NULL)
+        snprintf(cmrh->camera_model, sizeof(cmrh->camera_model), "%s", cam_model);
     snprintf(cmrh->capture_software, sizeof(cmrh->capture_software), "Cinemavi");
 
     cmrh->cinfo.shutter_us = shutter;

@@ -8,15 +8,12 @@ CMSaveWorker::CMSaveWorker(QObject *parent)
 
 }
 
-void CMSaveWorker::setParams(const std::string &fileName, const void *raw, const CMCaptureInfo &cinfo,
+void CMSaveWorker::setParams(const std::string &fileName, const CMRawImage &img,
                              const ImagePipelineParams &params)
 {
     this->fileName = fileName;
-    this->cinfo = cinfo;
+    this->imgRaw = img;
     this->plParams = params;
-    size_t rawSize = (cinfo.width * 3 / 2) * cinfo.height;
-    this->imgRaw.resize(rawSize);
-    memcpy(this->imgRaw.data(), raw, rawSize);
     this->paramsSet = true;
 }
 
@@ -25,12 +22,13 @@ void CMSaveWorker::save()
     assert(this->paramsSet);
 
     std::vector<uint8_t> imgRgb8;
-    imgRgb8.resize(this->cinfo.width * this->cinfo.height * 3);
-    pipeline_process_image(this->imgRaw.data(), imgRgb8.data(), &this->cinfo, &this->plParams);
-    rgb8_to_tiff(imgRgb8.data(), this->cinfo.width, this->cinfo.height, this->fileName.c_str());
+    const CMCaptureInfo &cinfo = this->imgRaw.getCaptureInfo();
+    imgRgb8.resize(cinfo.width * cinfo.height * 3);
+    pipeline_process_image(this->imgRaw.getRaw(), imgRgb8.data(), &cinfo, &this->plParams);
+    rgb8_to_tiff(imgRgb8.data(), cinfo.width, cinfo.height, this->fileName.c_str());
 
     this->paramsSet = false;
-    this->imgRaw.resize(0); // free memory
+    this->imgRaw = CMRawImage(); // free memory
 
     emit imageSaved();
 }

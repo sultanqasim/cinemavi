@@ -7,6 +7,9 @@ extern "C" {
 
 #include <stdbool.h>
 #include "cmraw.h"
+#include "pipeline.h"
+
+extern const ImagePipelineParams default_pipeline_params;
 
 void cinemavi_generate_dng(const void *raw, const CMRawHeader *cmrh,
         const char *fname);

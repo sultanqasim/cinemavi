@@ -34,6 +34,7 @@ SOURCES += \
     ../gamma.c \
     ../noise_reduction.c \
     ../pipeline.c \
+    cmautoexposure.cpp \
     cmcamerainterface.cpp \
     cmcontrolswidget.cpp \
     cmnumberslider.cpp \
@@ -60,6 +61,7 @@ HEADERS += \
     ../pipeline.h \
     ../tiny_dng_writer.h \
     ../ycrcg.h \
+    cmautoexposure.h \
     cmcamerainterface.h \
     cmcontrolswidget.h \
     cmnumberslider.h \

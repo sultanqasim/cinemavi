@@ -2,6 +2,7 @@
 #define CMSAVEWORKER_H
 
 #include <QObject>
+#include "cmrawimage.h"
 #include "../pipeline.h"
 
 class CMSaveWorker : public QObject
@@ -9,7 +10,7 @@ class CMSaveWorker : public QObject
     Q_OBJECT
 public:
     explicit CMSaveWorker(QObject *parent = nullptr);
-    void setParams(const std::string &fileName, const void *raw, const CMCaptureInfo &cinfo,
+    void setParams(const std::string &fileName, const CMRawImage &img,
                   const ImagePipelineParams &params);
 
 public slots:
@@ -20,8 +21,7 @@ signals:
 
 private:
     ImagePipelineParams plParams;
-    CMCaptureInfo cinfo;
-    std::vector<uint8_t> imgRaw;
+    CMRawImage imgRaw;
     std::string fileName;
     bool paramsSet = false;
 };

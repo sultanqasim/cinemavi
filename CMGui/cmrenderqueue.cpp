@@ -23,28 +23,17 @@ CMRenderQueue::~CMRenderQueue() {
     saveThread.wait();
 }
 
-void CMRenderQueue::setImage(const void *raw, const CMCaptureInfo *cinfo)
+void CMRenderQueue::setImage(const CMRawImage &img)
 {
-    // packed 12 bit bayer data
-    uint32_t rawSize = (cinfo->width/2) * cinfo->height * 3;
     this->imageSet = true;
     if (rendering) {
-        this->nextCInfo = *cinfo;
-        this->nextRaw.resize(rawSize);
-        memcpy(this->nextRaw.data(), raw, rawSize);
+        this->nextRaw = img;
         imageQueued = true;
         renderQueued = true;
     } else {
-        this->currentCInfo = *cinfo;
-        this->currentRaw.resize(rawSize);
-        memcpy(this->currentRaw.data(), raw, rawSize);
+        this->currentRaw = img;
         this->startRender();
     }
-}
-
-void CMRenderQueue::setRawImage(const CMRawImage &img)
-{
-    this->setImage(img.getRaw(), &img.getCaptureInfo());
 }
 
 void  CMRenderQueue::setParams(const ImagePipelineParams &params)
@@ -64,7 +53,7 @@ void CMRenderQueue::startRender()
     rendering = true;
 
     // prepare and launch worker
-    worker.setImage(this->currentRaw.data(), &this->currentCInfo);
+    worker.setImage(&this->currentRaw);
     worker.setParams(this->plParams);
     renderThread.start();
 }
@@ -77,7 +66,6 @@ void CMRenderQueue::renderDone(const QPixmap &pm)
 
     if (imageQueued) {
         currentRaw = nextRaw;
-        currentCInfo = nextCInfo;
         imageQueued = false;
     }
 
@@ -94,7 +82,7 @@ bool CMRenderQueue::autoWhiteBalance(const CMAutoWhiteParams &params, double *te
     if (!imageSet)
         return false;
 
-    pipeline_auto_white_balance(this->currentRaw.data(), &this->currentCInfo,
+    pipeline_auto_white_balance(this->currentRaw.getRaw(), &this->currentRaw.getCaptureInfo(),
             &params, temp_K, tint);
     return true;
 }
@@ -107,11 +95,9 @@ bool CMRenderQueue::saveImage(const QString &fileName)
     saving = true;
 
     if (imageQueued)
-        saveWorker.setParams(fileName.toStdString(), this->nextRaw.data(), this->nextCInfo,
-                             this->plParams);
+        saveWorker.setParams(fileName.toStdString(), this->nextRaw, this->plParams);
     else
-        saveWorker.setParams(fileName.toStdString(), this->currentRaw.data(), this->currentCInfo,
-                             this->plParams);
+        saveWorker.setParams(fileName.toStdString(), this->currentRaw, this->plParams);
 
     saveThread.start();
     return true;

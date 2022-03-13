@@ -58,6 +58,9 @@ typedef struct {
 int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
         const CMAutoWhiteParams *params, double *temp_K, double *tint);
 
+int pipeline_auto_exposure(const void *raw, const CMCaptureInfo *cinfo,
+        const ImagePipelineParams *params, double *change_factor);
+
 #ifdef __cplusplus
 }
 #endif

@@ -10,7 +10,7 @@
 #include "cm_calibrations.h"
 #include "colour_xfrm.h"
 
-static const ImagePipelineParams default_pipeline_params = {
+const ImagePipelineParams default_pipeline_params = {
     .exposure = 0.0,
     .temp_K = 5000.0,
     .tint = 0.0,
