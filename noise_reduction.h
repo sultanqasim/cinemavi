@@ -21,6 +21,12 @@ void noise_reduction_rgb2(const float *img_in, float *img_out, unsigned int widt
 void noise_reduction_ycrcg(const float *img_in, float *img_out, unsigned int width, unsigned int height,
         float intensity_lum, float intensity_chrom);
 
+void noise_reduction_median_rgb(const float *img_in, float *img_out, unsigned int width,
+        unsigned int height, float thresh_lum, float thresh_chrom);
+
+void noise_reduction_median_ycrcg(const float *img_in, float *img_out, unsigned int width,
+        unsigned int height, float thresh_lum, float thresh_chrom);
+
 #ifdef __cplusplus
 }
 #endif

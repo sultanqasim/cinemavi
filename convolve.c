@@ -248,3 +248,66 @@ float median_float(const float *arr, size_t num)
 
     return ret;
 }
+
+// median value in (2k+1) x (2k+1) square centred at (x, y) for selected channel
+static inline float median_pixel(const float *img, unsigned int width, unsigned int height,
+        unsigned int k, unsigned int x, unsigned int y, unsigned int chan)
+{
+    // assume k <= x < width - k
+    // assume j <= y < height - k
+    // assume 0 <= chan < 3
+
+    unsigned int n = 2*k + 1;
+    unsigned int x_base = x - k;
+    unsigned int y_base = y - k;
+    (void)height; // suppress unused warning
+    float scratch[n*n];
+    unsigned int idx = 0;
+
+    for (unsigned int i = 0; i < n; i++) {
+        for (unsigned int j = 0; j < n; j++) {
+            scratch[idx++] = img[image_idx(x_base + j, y_base + i, chan, width)];
+        }
+    }
+
+    return percentile_float_inplace(scratch, n*n, 0.5);
+}
+
+// same as above but with bounds checking for edge pixels
+float median_pixel_edge(const float *img, unsigned int width, unsigned int height,
+        unsigned int k, unsigned int x, unsigned int y, unsigned int chan)
+{
+    unsigned int n = 2*k + 1;
+    int x_base = x - k;
+    int y_base = y - k;
+    float scratch[n*n];
+    unsigned int idx = 0;
+
+    for (unsigned int i = 0; i < n; i++) {
+        for (unsigned int j = 0; j < n; j++) {
+            scratch[idx++] = img[image_idx(bounded_idx(x_base + j, 0, width),
+                                           bounded_idx(y_base + i, 0, height),
+                                           chan, width)];
+        }
+    }
+
+    return percentile_float_inplace(scratch, n*n, 0.5);
+}
+
+float median_pixel_33(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan)
+{
+    return median_pixel(img, width, height, 1, x, y, chan);
+}
+
+float median_pixel_55(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan)
+{
+    return median_pixel(img, width, height, 2, x, y, chan);
+}
+
+float median_pixel_77(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan)
+{
+    return median_pixel(img, width, height, 3, x, y, chan);
+}
