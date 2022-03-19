@@ -1,5 +1,7 @@
 #include "convolve.h"
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 // kernel should be an n*n array representing a square convolution kernel
 // c is the variance
@@ -162,4 +164,71 @@ void convolve_img(const float *img_in, float *img_out, unsigned int width, unsig
             }
         }
     }
+}
+
+// returns median of supplied array
+// does partial sorting in-place, clobbering array in the process
+float median_float_inplace(float *scratch, size_t num)
+{
+    if (num == 0)
+        return 0;
+    if (num == 1)
+        return scratch[0];
+
+    size_t midx = num >> 1;
+    size_t sorted_low = -1;    // every value before this index is less than or equal to it
+    size_t sorted_high = num;  // every value after this index is greater than it
+
+    while (1) {
+        size_t i = sorted_low + 1;
+        size_t j = sorted_high - 1;
+
+        // partition
+        float part = scratch[i];
+        while (i < j) {
+            while (scratch[i] < part) i++;
+            while (scratch[j] > part) j--;
+            if (scratch[i] == scratch[j]) {
+                // special case, equal values below pivot OK
+                i++;
+            } else {
+                // swap
+                float t = scratch[i];
+                scratch[i] = scratch[j];
+                scratch[j] = t;
+            }
+        }
+
+        if (j == midx)
+            break;
+        else if (j < midx)
+            sorted_low = j;
+        else
+            sorted_high = j;
+    }
+
+    return scratch[midx];
+}
+
+// returns median of supplied array
+float median_float(const float *arr, size_t num)
+{
+    // avoid huge VLAs
+    const size_t MAX_STACK_FLOAT = 64;
+    float *scratch;
+    float sbuf[MAX_STACK_FLOAT];
+    if (num > MAX_STACK_FLOAT) {
+        scratch = (float *)malloc(num * sizeof(float));
+        if (scratch == NULL) return 0;
+    } else {
+        scratch = sbuf;
+    }
+
+    memcpy(scratch, arr, num * sizeof(float));
+    float ret = median_float_inplace(scratch, num);
+
+    if (num > MAX_STACK_FLOAT)
+        free(scratch);
+
+    return ret;
 }
