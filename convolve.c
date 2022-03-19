@@ -166,16 +166,19 @@ void convolve_img(const float *img_in, float *img_out, unsigned int width, unsig
     }
 }
 
-// returns median of supplied array
+// returns requested percentile (0.0 to 1.0) of supplied array
 // does partial sorting in-place, clobbering array in the process
-float median_float_inplace(float *scratch, size_t num)
+float percentile_float_inplace(float *scratch, size_t num, double p)
 {
     if (num == 0)
         return 0;
     if (num == 1)
         return scratch[0];
 
-    size_t midx = num >> 1;
+    size_t midx = num * p;
+    if (midx >= num)
+        midx = num - 1;
+
     size_t sorted_low = -1;    // every value before this index is less than or equal to it
     size_t sorted_high = num;  // every value after this index is greater than it
 
@@ -238,7 +241,7 @@ float median_float(const float *arr, size_t num)
     }
 
     memcpy(scratch, arr, num * sizeof(float));
-    float ret = median_float_inplace(scratch, num);
+    float ret = percentile_float_inplace(scratch, num, 0.5);
 
     if (num > MAX_STACK_FLOAT)
         free(scratch);

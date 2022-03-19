@@ -22,9 +22,9 @@ static inline unsigned int image_idx(unsigned int x, unsigned int y, unsigned in
     return 3 * (x + y*width) + chan;
 }
 
-// returns median of supplied array
+// returns requested percentile (0.0 to 1.0) of supplied array
 // does partial sorting in-place, clobbering array in the process
-float median_float_inplace(float *scratch, size_t num);
+float percentile_float_inplace(float *scratch, size_t num, double p);
 
 // returns median of supplied array
 float median_float(const float *arr, size_t num);
