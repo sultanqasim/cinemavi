@@ -180,17 +180,21 @@ float median_float_inplace(float *scratch, size_t num)
     size_t sorted_high = num;  // every value after this index is greater than it
 
     while (1) {
+        size_t eq = 0;
         size_t i = sorted_low + 1;
         size_t j = sorted_high - 1;
 
         // partition
-        float part = scratch[i];
+        size_t part_idx = (i + j) >> 1;
+        float part = scratch[part_idx];
         while (i < j) {
             while (scratch[i] < part) i++;
             while (scratch[j] > part) j--;
             if (scratch[i] == scratch[j]) {
                 // special case, equal values below pivot OK
+                // also implicitly means scratch[i] and scratch[j] == part
                 i++;
+                eq++;
             } else {
                 // swap
                 float t = scratch[i];
@@ -199,9 +203,18 @@ float median_float_inplace(float *scratch, size_t num)
             }
         }
 
+        // over the full array, we have
+        // i elements <= part
+        // eq elements equal to part (at least?)
+        // i - eq elements < part (at most?)
+
         if (j == midx)
             break;
-        else if (j < midx)
+        else if ((i - eq < midx) && (i > midx)) {
+            scratch[part_idx] = scratch[midx];
+            scratch[midx] = part;
+            break;
+        } else if (j < midx)
             sorted_low = j;
         else
             sorted_high = j;
