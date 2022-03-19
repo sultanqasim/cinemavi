@@ -123,5 +123,5 @@ bool CMRenderQueue::hasImage()
     if (imageQueued)
         return !this->nextRaw.isEmpty();
     else
-        return !this->nextRaw.isEmpty();
+        return !this->currentRaw.isEmpty();
 }
