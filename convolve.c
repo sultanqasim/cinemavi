@@ -376,3 +376,74 @@ float median_pixel_77(const float *img, unsigned int width, unsigned int height,
 {
     return median_pixel(img, width, height, 3, x, y, chan);
 }
+
+// median value in corners and centre of (2k+1) x (2k+1) square centred at (x, y) for selected channel
+static inline float median_pixel_x(const float *img, unsigned int width, unsigned int height,
+        unsigned int k, unsigned int x, unsigned int y, unsigned int chan)
+{
+    // assume k <= x < width - k
+    // assume j <= y < height - k
+    // assume 0 <= chan < 3
+
+    unsigned int n = 2*k + 1;
+    unsigned int x_base = x - k;
+    unsigned int y_base = y - k;
+    (void)height; // suppress unused warning
+    float scratch[5];
+
+    // top left, top right, centre, bottom left, bottom right
+    scratch[0] = img[image_idx(x_base, y_base, chan, width)];
+    scratch[1] = img[image_idx(x_base + n - 1, y_base, chan, width)];
+    scratch[2] = img[image_idx(x_base + k, y_base + k, chan, width)];
+    scratch[3] = img[image_idx(x_base, y_base + n - 1, chan, width)];
+    scratch[4] = img[image_idx(x_base + n - 1, y_base + n - 1, chan, width)];
+
+    return median_float_small(scratch, 5);
+}
+
+// same as above but with bounds checking for edge pixels
+float median_pixel_x_edge(const float *img, unsigned int width, unsigned int height,
+        unsigned int k, unsigned int x, unsigned int y, unsigned int chan)
+{
+    // assume k <= x < width - k
+    // assume j <= y < height - k
+    // assume 0 <= chan < 3
+
+    unsigned int n = 2*k + 1;
+    unsigned int x_base = x - k;
+    unsigned int y_base = y - k;
+    (void)height; // suppress unused warning
+    float scratch[5];
+
+    // top left, top right, centre, bottom left, bottom right
+    scratch[0] = img[image_idx(bounded_idx(x_base, 0, width),
+                               bounded_idx(y_base, 0, height), chan, width)];
+    scratch[1] = img[image_idx(bounded_idx(x_base + n - 1, 0, width),
+                               bounded_idx(y_base, 0, height), chan, width)];
+    scratch[2] = img[image_idx(bounded_idx(x_base + k, 0, width),
+                               bounded_idx(y_base + k, 0, height), chan, width)];
+    scratch[3] = img[image_idx(bounded_idx(x_base, 0, width),
+                               bounded_idx(y_base + n - 1, 0, height), chan, width)];
+    scratch[4] = img[image_idx(bounded_idx(x_base + n - 1, 0, width),
+                               bounded_idx(y_base + n - 1, 0, height), chan, width)];
+
+    return median_float_small(scratch, 5);
+}
+
+float median_pixel_x_33(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan)
+{
+    return median_pixel_x(img, width, height, 1, x, y, chan);
+}
+
+float median_pixel_x_55(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan)
+{
+    return median_pixel_x(img, width, height, 2, x, y, chan);
+}
+
+float median_pixel_x_77(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan)
+{
+    return median_pixel_x(img, width, height, 3, x, y, chan);
+}
