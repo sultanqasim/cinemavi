@@ -21,7 +21,7 @@ const ImagePipelineParams default_pipeline_params = {
     .gamma = 0.3,
     .shadow = 1,
     .black = 0.3,
-    .lut_mode = CMLUT_HDR_CUBIC
+    .lut_mode = CMLUT_HDR_CUBIC_AUTO
 };
 
 void cinemavi_generate_dng(const void *raw, const CMRawHeader *cmrh,

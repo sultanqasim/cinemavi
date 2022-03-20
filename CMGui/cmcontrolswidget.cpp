@@ -150,7 +150,7 @@ void CMControlsWidget::onReset(void)
     gammaSlider->setValue(0.3);
     shadowSlider->setValue(1);
     blackSlider->setValue(0.3);
-    tmModeSelector->setCurrentIndex(CMLUT_HDR_CUBIC);
+    tmModeSelector->setCurrentIndex(CMLUT_HDR_CUBIC_AUTO);
 }
 
 void CMControlsWidget::onLUTModeChanged(int index)
