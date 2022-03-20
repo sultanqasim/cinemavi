@@ -166,6 +166,18 @@ void convolve_img(const float *img_in, float *img_out, unsigned int width, unsig
     }
 }
 
+static inline size_t med3_idx(const float *arr, size_t i, size_t j, size_t k)
+{
+    float a = arr[i];
+    float b = arr[j];
+    float c = arr[k];
+    if ((a >= b && a <= c) || (a <= b && a >= c))
+        return i;
+    if ((b >= a && b <= c) || (b <= a && b >= c))
+        return j;
+    return k;
+}
+
 // returns requested percentile (0.0 to 1.0) of supplied array
 // does partial sorting in-place, clobbering array in the process
 float percentile_float_inplace(float *scratch, size_t num, double p)
@@ -188,7 +200,11 @@ float percentile_float_inplace(float *scratch, size_t num, double p)
         size_t j = sorted_high - 1;
 
         // partition
-        size_t part_idx = (i + j) >> 1;
+        size_t part_idx;
+        if (j - i >= 8)
+            part_idx = med3_idx(scratch, i, (i + j) >> 1, j);
+        else
+            part_idx = (i + j) >> 1;
         float part = scratch[part_idx];
         while (i < j) {
             while (scratch[i] < part) i++;
