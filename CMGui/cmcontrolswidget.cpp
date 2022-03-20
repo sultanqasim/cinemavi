@@ -145,8 +145,8 @@ void CMControlsWidget::onReset(void)
     tintSlider->setValue(this->shotTint);
     hueSlider->setValue(0);
     satSlider->setValue(1);
-    lumaSlider->setValue(0);
-    chromaSlider->setValue(0);
+    lumaSlider->setValue(0.08);
+    chromaSlider->setValue(0.12);
     gammaSlider->setValue(0.3);
     shadowSlider->setValue(1);
     blackSlider->setValue(0.3);
