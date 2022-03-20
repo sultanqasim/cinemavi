@@ -29,6 +29,9 @@ float percentile_float_inplace(float *scratch, size_t num, double p);
 // returns median of supplied array
 float median_float(const float *arr, size_t num);
 
+// alternate algorithm that may be faster for small arrays
+float median_float_small(const float *arr, size_t num);
+
 // median value in (2k+1) x (2k+1) square centred at (x, y) for selected channel
 // bounds checking is performed, repeating edge pixels
 float median_pixel_edge(const float *img, unsigned int width, unsigned int height,

@@ -180,6 +180,7 @@ static inline size_t med3_idx(const float *arr, size_t i, size_t j, size_t k)
 
 // returns requested percentile (0.0 to 1.0) of supplied array
 // does partial sorting in-place, clobbering array in the process
+// uses quickselect algorithm
 float percentile_float_inplace(float *scratch, size_t num, double p)
 {
     if (num == 0)
@@ -263,6 +264,54 @@ float median_float(const float *arr, size_t num)
         free(scratch);
 
     return ret;
+}
+
+// alternate algorithm that may be faster for small arrays
+float median_float_small(const float *arr, size_t num)
+{
+    switch(num) {
+    case 0:
+        return 0;
+    case 1:
+        return arr[0];
+    case 2:
+        return arr[0] > arr[1] ? arr[0] : arr[1];
+    case 3:
+        return arr[med3_idx(arr, 0, 1, 2)];
+    default:
+        break;
+    }
+
+    size_t midx = num >> 1;
+    float pivot = arr[med3_idx(arr, 0, midx, num - 1)];
+
+    while (1) {
+        size_t above = 0;
+        size_t equal = 0;
+        size_t below = 0;
+        float next = 1E30;
+        float prev = -1E30;
+
+        for (size_t i = 0; i < num; i++) {
+            if (arr[i] > pivot) above++;
+            else if (arr[i] < pivot) below++;
+            else equal++;
+
+            if (arr[i] > pivot && arr[i] < next)
+                next = arr[i];
+            else if (arr[i] < pivot && arr[i] > prev)
+                prev = arr[i];
+        }
+
+        if (below <= midx && below + equal > midx)
+            break;
+        if (below + equal <= midx)
+            pivot = next;
+        else
+            pivot = prev;
+    }
+
+    return pivot;
 }
 
 // median value in (2k+1) x (2k+1) square centred at (x, y) for selected channel
