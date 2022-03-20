@@ -5,7 +5,7 @@
 
 #include "noise_reduction.h"
 #include "convolve.h"
-#include "ycrcg.h"
+#include "ycbcr.h"
 
 #define KERNEL_SIZE 5
 #define KERNEL_VARIANCE 1.3
@@ -52,7 +52,7 @@ void noise_reduction_rgb(const float *img_in, float *img_out, unsigned int width
 }
 
 // similar to above, but with separate luminance and chrominance NR
-// slower due to transform from RGB to YCrCg and back
+// slower due to transform from RGB to YCbCr and back
 void noise_reduction_rgb2(const float *img_in, float *img_out, unsigned int width, unsigned int height,
         float intensity_lum, float intensity_chrom)
 {
@@ -63,17 +63,17 @@ void noise_reduction_rgb2(const float *img_in, float *img_out, unsigned int widt
         return;
     }
 
-    // temporarily put YCrGg original in img_out
-    // img_temp will store YCrCg noise reduced image
-    colour_xfrm(img_in, img_out, width, height, &CMf_RGB2YCrCg);
-    noise_reduction_ycrcg(img_out, img_temp, width, height, intensity_lum, intensity_chrom);
-    colour_xfrm(img_temp, img_out, width, height, &CMf_YCrCg2RGB);
+    // temporarily put YCbCr original in img_out
+    // img_temp will store YCbCr noise reduced image
+    colour_xfrm(img_in, img_out, width, height, &CMf_sRGB2YCbCr);
+    noise_reduction_ycbcr(img_out, img_temp, width, height, intensity_lum, intensity_chrom);
+    colour_xfrm(img_temp, img_out, width, height, &CMf_YCbCr2sRGB);
 
     free(img_temp);
 }
 
-// similar to above, but faster since input and output image is YCrCg
-void noise_reduction_ycrcg(const float *img_in, float *img_out, unsigned int width, unsigned int height,
+// similar to above, but faster since input and output image is YCbCr
+void noise_reduction_ycbcr(const float *img_in, float *img_out, unsigned int width, unsigned int height,
         float intensity_lum, float intensity_chrom)
 {
     float kernel[KERNEL_SIZE * KERNEL_SIZE];
@@ -116,7 +116,7 @@ void noise_reduction_ycrcg(const float *img_in, float *img_out, unsigned int wid
     free(img_smooth);
 }
 
-// expects YCgCr or similar lum/chrom/chrom colour space
+// expects YCbCr or similar lum/chrom/chrom colour space
 // uses 3x3 window for luminance, 7x7 for chrominance
 static inline void nr_median_pixel(const float *img_in, float *img_out, unsigned int width,
         unsigned int height, unsigned int x, unsigned int y, float thresh_lum, float thresh_chrom)
@@ -164,16 +164,16 @@ void noise_reduction_median_rgb(const float *img_in, float *img_out, unsigned in
         return;
     }
 
-    // temporarily put YCrGg original in img_out
-    // img_temp will store YCrCg noise reduced image
-    colour_xfrm(img_in, img_out, width, height, &CMf_RGB2YCrCg);
-    noise_reduction_median_ycrcg(img_out, img_temp, width, height, thresh_lum, thresh_chrom);
-    colour_xfrm(img_temp, img_out, width, height, &CMf_YCrCg2RGB);
+    // temporarily put YCbCr original in img_out
+    // img_temp will store YCbCr noise reduced image
+    colour_xfrm(img_in, img_out, width, height, &CMf_sRGB2YCbCr);
+    noise_reduction_median_ycbcr(img_out, img_temp, width, height, thresh_lum, thresh_chrom);
+    colour_xfrm(img_temp, img_out, width, height, &CMf_YCbCr2sRGB);
 
     free(img_temp);
 }
 
-void noise_reduction_median_ycrcg(const float *img_in, float *img_out, unsigned int width,
+void noise_reduction_median_ycbcr(const float *img_in, float *img_out, unsigned int width,
         unsigned int height, float thresh_lum, float thresh_chrom)
 {
     const unsigned int k = 3; // 7x7 is the largest "kernel" (median box) we use
@@ -214,7 +214,7 @@ void noise_reduction_median_ycrcg(const float *img_in, float *img_out, unsigned 
     }
 }
 
-// expects YCgCr or similar lum/chrom/chrom colour space
+// expects YCbCr or similar lum/chrom/chrom colour space
 // uses 3x3 window for luminance, 7x7 for chrominance
 static inline void nr_median_pixel_x(const float *img_in, float *img_out, unsigned int width,
         unsigned int height, unsigned int x, unsigned int y, float thresh_lum, float thresh_chrom)
@@ -262,16 +262,16 @@ void noise_reduction_median_x_rgb(const float *img_in, float *img_out, unsigned 
         return;
     }
 
-    // temporarily put YCrGg original in img_out
-    // img_temp will store YCrCg noise reduced image
-    colour_xfrm(img_in, img_out, width, height, &CMf_RGB2YCrCg);
-    noise_reduction_median_x_ycrcg(img_out, img_temp, width, height, thresh_lum, thresh_chrom);
-    colour_xfrm(img_temp, img_out, width, height, &CMf_YCrCg2RGB);
+    // temporarily put YCbCr original in img_out
+    // img_temp will store YCbCr noise reduced image
+    colour_xfrm(img_in, img_out, width, height, &CMf_sRGB2YCbCr);
+    noise_reduction_median_x_ycbcr(img_out, img_temp, width, height, thresh_lum, thresh_chrom);
+    colour_xfrm(img_temp, img_out, width, height, &CMf_YCbCr2sRGB);
 
     free(img_temp);
 }
 
-void noise_reduction_median_x_ycrcg(const float *img_in, float *img_out, unsigned int width,
+void noise_reduction_median_x_ycbcr(const float *img_in, float *img_out, unsigned int width,
         unsigned int height, float thresh_lum, float thresh_chrom)
 {
     const unsigned int k = 3; // 7x7 is the largest "kernel" (median box) we use

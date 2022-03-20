@@ -13,26 +13,26 @@ void noise_reduction_rgb(const float *img_in, float *img_out, unsigned int width
         float intensity);
 
 // similar to above, but with separate luminance and chrominance NR
-// slower due to transform from RGB to YCrCg and back
+// slower due to transform from RGB to YCbCr and back
 void noise_reduction_rgb2(const float *img_in, float *img_out, unsigned int width, unsigned int height,
         float intensity_lum, float intensity_chrom);
 
-// similar to above, but faster since input and output image is YCrCg
-void noise_reduction_ycrcg(const float *img_in, float *img_out, unsigned int width, unsigned int height,
+// similar to above, but faster since input and output image is YCbCr
+void noise_reduction_ycbcr(const float *img_in, float *img_out, unsigned int width, unsigned int height,
         float intensity_lum, float intensity_chrom);
 
 // median filter, 3x3 lum, 7x7 chrom
 void noise_reduction_median_rgb(const float *img_in, float *img_out, unsigned int width,
         unsigned int height, float thresh_lum, float thresh_chrom);
 
-void noise_reduction_median_ycrcg(const float *img_in, float *img_out, unsigned int width,
+void noise_reduction_median_ycbcr(const float *img_in, float *img_out, unsigned int width,
         unsigned int height, float thresh_lum, float thresh_chrom);
 
 // 5 point "X" pattern median filter, 3x3 lum, 7x7 chrom
 void noise_reduction_median_x_rgb(const float *img_in, float *img_out, unsigned int width,
         unsigned int height, float thresh_lum, float thresh_chrom);
 
-void noise_reduction_median_x_ycrcg(const float *img_in, float *img_out, unsigned int width,
+void noise_reduction_median_x_ycbcr(const float *img_in, float *img_out, unsigned int width,
         unsigned int height, float thresh_lum, float thresh_chrom);
 
 #ifdef __cplusplus
