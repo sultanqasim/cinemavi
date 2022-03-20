@@ -162,7 +162,7 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     if (params->nr_lum <= 0 && params->nr_chrom <= 0) {
         colour_f2i(rgbf_0, rgb12, width, height, 4095);
     } else {
-        noise_reduction_median_rgb(rgbf_0, rgbf_1, width, height, params->nr_lum, params->nr_chrom);
+        noise_reduction_median_x_rgb(rgbf_0, rgbf_1, width, height, params->nr_lum, params->nr_chrom);
         colour_f2i(rgbf_1, rgb12, width, height, 4095);
     }
 
