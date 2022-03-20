@@ -25,10 +25,10 @@ static int u16_cmp(const void *a, const void *b)
     return *(uint16_t *)a - *(uint16_t *)b;
 }
 
-// find the 10th, 75th, and 99.5th percentile exposure values of each channel
+// find the 10th, 90th, and 99.5th percentile exposure values of each channel
 // percentile pointer arguments should be to arrays of 3 elements
 static int exposure_percentiles_rgb(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t *percentile10, uint16_t *percentile75, uint16_t *percentile99)
+        uint16_t *percentile10, uint16_t *percentile90, uint16_t *percentile99)
 {
     uint16_t samp_pitch = pick_samp_pitch(width, height);
     uint16_t samp_width = width / samp_pitch;
@@ -38,7 +38,7 @@ static int exposure_percentiles_rgb(const uint16_t *img_rgb, uint16_t width, uin
     if (samp_buf == NULL) {
         for (int i = 0; i < 3; i++) {
             percentile10[i] = 0;
-            percentile75[i] = 0;
+            percentile90[i] = 0;
             percentile99[i] = 0;
         }
         return -ENOMEM;
@@ -56,7 +56,7 @@ static int exposure_percentiles_rgb(const uint16_t *img_rgb, uint16_t width, uin
         // sort it and extract the percentiles
         qsort(samp_buf, samp_width * samp_height, sizeof(uint16_t), u16_cmp);
         percentile10[chan] = samp_buf[(unsigned)(samp_width * samp_height * 0.1)];
-        percentile75[chan] = samp_buf[(unsigned)(samp_width * samp_height * 0.75)];
+        percentile90[chan] = samp_buf[(unsigned)(samp_width * samp_height * 0.9)];
         percentile99[chan] = samp_buf[(unsigned)(samp_width * samp_height * 0.995)];
     }
 
@@ -70,10 +70,10 @@ static int float_cmp(const void *a, const void *b)
     return (c > 0) - (c < 0);
 }
 
-// find the 10th, 75th, and 99.5th percentile exposure values of each channel
+// find the 10th, 90th, and 99.5th percentile exposure values of each channel
 // percentile pointer arguments should be to arrays of 3 elements
 static int exposure_percentiles_rgb2(const float *img_rgb, uint16_t width, uint16_t height,
-        float *percentile10, float *percentile75, float *percentile99)
+        float *percentile10, float *percentile90, float *percentile99)
 {
     uint16_t samp_pitch = pick_samp_pitch(width, height);
     uint16_t samp_width = width / samp_pitch;
@@ -83,7 +83,7 @@ static int exposure_percentiles_rgb2(const float *img_rgb, uint16_t width, uint1
     if (samp_buf == NULL) {
         for (int i = 0; i < 3; i++) {
             percentile10[i] = 0;
-            percentile75[i] = 0;
+            percentile90[i] = 0;
             percentile99[i] = 0;
         }
         return -ENOMEM;
@@ -101,7 +101,7 @@ static int exposure_percentiles_rgb2(const float *img_rgb, uint16_t width, uint1
         // sort it and extract the percentiles
         qsort(samp_buf, samp_width * samp_height, sizeof(float), float_cmp);
         percentile10[chan] = samp_buf[(unsigned)(samp_width * samp_height * 0.1)];
-        percentile75[chan] = samp_buf[(unsigned)(samp_width * samp_height * 0.75)];
+        percentile90[chan] = samp_buf[(unsigned)(samp_width * samp_height * 0.9)];
         percentile99[chan] = samp_buf[(unsigned)(samp_width * samp_height * 0.995)];
     }
 
@@ -109,27 +109,27 @@ static int exposure_percentiles_rgb2(const float *img_rgb, uint16_t width, uint1
     return 0;
 }
 
-// find the 10th, 75th, and 99.5th percentile exposure values of the brightest channels
+// find the 10th, 90th, and 99.5th percentile exposure values of the brightest channels
 int exposure_percentiles(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t *percentile10, uint16_t *percentile75, uint16_t *percentile99)
+        uint16_t *percentile10, uint16_t *percentile90, uint16_t *percentile99)
 {
-    uint16_t p10[3], p75[3], p99[3];
+    uint16_t p10[3], p90[3], p99[3];
     uint16_t p10_max = 0;
-    uint16_t p75_max = 0;
+    uint16_t p90_max = 0;
     uint16_t p99_max = 0;
 
     // find the brightest of each channel
-    int ret = exposure_percentiles_rgb(img_rgb, width, height, p10, p75, p99);
+    int ret = exposure_percentiles_rgb(img_rgb, width, height, p10, p90, p99);
     if (ret == 0) {
         for (int chan = 0; chan < 3; chan++) {
             if (p10[chan] > p10_max) p10_max = p10[chan];
-            if (p75[chan] > p75_max) p75_max = p75[chan];
+            if (p90[chan] > p90_max) p90_max = p90[chan];
             if (p99[chan] > p99_max) p99_max = p99[chan];
         }
     }
 
     *percentile10 = p10_max;
-    *percentile75 = p75_max;
+    *percentile90 = p90_max;
     *percentile99 = p99_max;
 
     return ret;
@@ -137,42 +137,42 @@ int exposure_percentiles(const uint16_t *img_rgb, uint16_t width, uint16_t heigh
 
 // Returns shadow slope needed to boost shadows and midtones to target
 double auto_hdr_shadow(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t percentile10, uint16_t percentile75)
+        uint16_t percentile10, uint16_t percentile90)
 {
-    uint16_t p10, p75, p99;
-    if (exposure_percentiles(img_rgb, width, height, &p10, &p75, &p99))
+    uint16_t p10, p90, p99;
+    if (exposure_percentiles(img_rgb, width, height, &p10, &p90, &p99))
         return 1.0;
 
     // now calculate the exposure change factors for shadows and midtones
     double gain10 = (double)percentile10 / p10;
-    double gain75 = (double)percentile75 / p75;
+    double gain90 = (double)percentile90 / p90;
 
     // even if shadows are dark, try not to over-brighten midtones
-    if (gain10/gain75 > 2)
-        return gain75 * 2;
+    if (gain10/gain90 > 2)
+        return gain90 * 2;
 
-    return gain10 > gain75 ? gain10 : gain75;
+    return gain10 > gain90 ? gain10 : gain90;
 }
 
-/* Returns exposure multiplication factor to make the 75th percentile value of the brightest
- * channel equal to percentile75 argument. However, the returned factor would be reduced
+/* Returns exposure multiplication factor to make the 90th percentile value of the brightest
+ * channel equal to percentile90 argument. However, the returned factor would be reduced
  * if needed to ensure the 99.5th percentile of the brightest channel <= percentile99;
  */
 double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t percentile75, uint16_t percentile99, uint16_t white)
+        uint16_t percentile90, uint16_t percentile99, uint16_t white)
 {
-    uint16_t p10, p75, p99;
-    if (exposure_percentiles(img_rgb, width, height, &p10, &p75, &p99))
+    uint16_t p10, p90, p99;
+    if (exposure_percentiles(img_rgb, width, height, &p10, &p90, &p99))
         return 1.0;
 
     // quickly darken if p99 is clipped
     if (p99 >= white) return 0.5;
 
     // now calculate the exposure change factor based on our rules
-    double gain75 = (double)percentile75 / p75;
+    double gain90 = (double)percentile90 / p90;
     double gain99 = (double)percentile99 / p99;
 
-    return gain75 < gain99 ? gain75 : gain99;
+    return gain90 < gain99 ? gain90 : gain99;
 }
 
 // Returns darkest pixel value in green channel or 0.02, whichever is lower
@@ -193,9 +193,9 @@ float auto_black_point(const float *img_rgb, uint16_t width, uint16_t height)
 void auto_white_balance_brights(const float *img_rgb, uint16_t width, uint16_t height,
         double *red, double *blue)
 {
-    float p10[3], p75[3], p99[3];
+    float p10[3], p90[3], p99[3];
 
-    if (exposure_percentiles_rgb2(img_rgb, width, height, p10, p75, p99) != 0) {
+    if (exposure_percentiles_rgb2(img_rgb, width, height, p10, p90, p99) != 0) {
         *red = 1.0;
         *blue = 1.0;
         return;

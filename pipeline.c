@@ -38,11 +38,11 @@ static void pipeline_gen_lut(uint8_t *glut, CMLUTMode lut_mode, double gamma,
 static void pipeline_auto_hdr(uint16_t *rgb12, uint16_t width, uint16_t height,
         CMLUTMode *lut_mode, double *gamma, double *shadow, double *black)
 {
-    const double targ10 = 200;
-    const double targ75 = 800;
+    const double targ10 = 100;
+    const double targ90 = 1200;
 
     if (*lut_mode == CMLUT_HDR_AUTO) {
-        double boost = auto_hdr_shadow(rgb12, width, height, targ10, targ75);
+        double boost = auto_hdr_shadow(rgb12, width, height, targ10, targ90);
         if (boost < 1) boost = 1.0;
         else if (boost > 32) boost = 32.0;
         *shadow = boost;
@@ -50,9 +50,9 @@ static void pipeline_auto_hdr(uint16_t *rgb12, uint16_t width, uint16_t height,
         *lut_mode = CMLUT_HDR;
         *gamma = 0.2;
     } else if (*lut_mode == CMLUT_HDR_CUBIC_AUTO) {
-        uint16_t p10, p75, p99;
-        if (!exposure_percentiles(rgb12, width, height, &p10, &p75, &p99)) {
-            *shadow = pow(targ75 / p75, 1.4);
+        uint16_t p10, p90, p99;
+        if (!exposure_percentiles(rgb12, width, height, &p10, &p90, &p99)) {
+            *shadow = pow(targ90 / p90, 1.4);
             if (*shadow > 48) *shadow = 48;
             else if (*shadow < 1) *shadow = 1;
 
@@ -373,7 +373,7 @@ int pipeline_auto_exposure(const void *raw, const CMCaptureInfo *cinfo,
     // scale auto exposure targets for each colour channel accordingly
 
     // Step 3: compute exposure change factor
-    *change_factor = auto_exposure(rgb12, width, height, 1300, 3700, 4090);
+    *change_factor = auto_exposure(rgb12, width, height, 2000, 3700, 4090);
 
 cleanup:
     free(bayer12);

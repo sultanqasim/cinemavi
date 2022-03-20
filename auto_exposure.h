@@ -7,20 +7,20 @@ extern "C" {
 
 #include <stdint.h>
 
-// find the 10th, 75th, and 99.5th percentile exposure values of the brightest channels
+// find the 10th, 90th, and 99.5th percentile exposure values of the brightest channels
 int exposure_percentiles(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t *percentile10, uint16_t *percentile75, uint16_t *percentile99);
+        uint16_t *percentile10, uint16_t *percentile90, uint16_t *percentile99);
 
 // Returns shadow slope needed to boost shadows and midtones to target
 double auto_hdr_shadow(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t percentile10, uint16_t percentile75);
+        uint16_t percentile10, uint16_t percentile90);
 
-/* Returns exposure multiplication factor to make the 75th percentile value of the brightest
- * channel equal to percentile75 argument. However, the returned factor would be reduced
+/* Returns exposure multiplication factor to make the 90th percentile value of the brightest
+ * channel equal to percentile90 argument. However, the returned factor would be reduced
  * if needed to ensure the 99.5th percentile of the brightest channel <= percentile99;
  */
 double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t percentile75, uint16_t percentile99, uint16_t white);
+        uint16_t percentile90, uint16_t percentile99, uint16_t white);
 
 // Returns darkest pixel value in green channel or 0.02, whichever is lower
 float auto_black_point(const float *img_rgb, uint16_t width, uint16_t height);
