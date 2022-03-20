@@ -45,7 +45,7 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     wbgl->addWidget(warmthSlider, 0, 1);
     QLabel *tintLabel = new QLabel(tr("Tint"), wbGroup);
     tintSlider = new CMNumberSlider(wbGroup);
-    tintSlider->setMinMax(-2, 2);
+    tintSlider->setMinMax(-1, 1);
     wbgl->addWidget(tintLabel, 1, 0);
     wbgl->addWidget(tintSlider, 1, 1);
     QLabel *awbLabel = new QLabel(tr("Auto"), wbGroup);
