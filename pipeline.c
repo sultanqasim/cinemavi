@@ -159,10 +159,10 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     colour_xfrm(rgbf_1, rgbf_0, width, height, &cmat_f);
 
     // Step 4: Noise reduction and convert back to integer
-    if (params->nr_lum <= 1. && params->nr_chrom <= 1.) {
+    if (params->nr_lum <= 0 && params->nr_chrom <= 0) {
         colour_f2i(rgbf_0, rgb12, width, height, 4095);
     } else {
-        noise_reduction_rgb2(rgbf_0, rgbf_1, width, height, params->nr_lum, params->nr_chrom);
+        noise_reduction_median_rgb(rgbf_0, rgbf_1, width, height, params->nr_lum, params->nr_chrom);
         colour_f2i(rgbf_1, rgb12, width, height, 4095);
     }
 

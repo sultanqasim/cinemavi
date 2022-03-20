@@ -81,12 +81,12 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     nrgl->setColumnStretch(1, 1);
     QLabel *lumaLabel = new QLabel(tr("Luma"), nrGroup);
     lumaSlider = new CMNumberSlider(nrGroup);
-    lumaSlider->setMinMax(0, 5000);
+    lumaSlider->setMinMax(0, 0.3);
     nrgl->addWidget(lumaLabel, 0, 0);
     nrgl->addWidget(lumaSlider, 0, 1);
     QLabel *chromaLabel = new QLabel(tr("Chroma"), nrGroup);
     chromaSlider = new CMNumberSlider(nrGroup);
-    chromaSlider->setMinMax(0, 5000);
+    chromaSlider->setMinMax(0, 0.3);
     nrgl->addWidget(chromaLabel, 1, 0);
     nrgl->addWidget(chromaSlider, 1, 1);
 
