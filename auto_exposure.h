@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include "colour_xfrm.h"
 
 // find the 10th, 90th, and 99.5th percentile exposure values of the brightest channels
 int exposure_percentiles(const uint16_t *img_rgb, uint16_t width, uint16_t height,
@@ -20,7 +21,8 @@ double auto_hdr_shadow(const uint16_t *img_rgb, uint16_t width, uint16_t height,
  * if needed to ensure the 99.5th percentile of the brightest channel <= percentile99;
  */
 double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t percentile90, uint16_t percentile99, uint16_t white);
+        uint16_t percentile90, uint16_t percentile99, uint16_t white,
+        const ColourPixel *cam_white);
 
 // Returns darkest pixel value in green channel or 0.02, whichever is lower
 float auto_black_point(const float *img_rgb, uint16_t width, uint16_t height);

@@ -366,14 +366,18 @@ int pipeline_auto_exposure(const void *raw, const CMCaptureInfo *cinfo,
     height = height_out;
 
     // Step 2: Compute colour transformation matrix
-    ColourMatrix cmat;
-    gen_colour_matrix(cinfo, params, &cmat);
+    ColourMatrix cam_to_target;
+    gen_colour_matrix(cinfo, params, &cam_to_target);
 
-    // TODO: use the computed colour matrix to determine camera white, and then
+    // use the computed colour matrix to determine camera white, and then
     // scale auto exposure targets for each colour channel accordingly
+    ColourMatrix target_to_cam;
+    ColourPixel cam_white;
+    colour_matinv33(&target_to_cam, &cam_to_target);
+    colour_white_in_cam(&target_to_cam, &cam_white);
 
     // Step 3: compute exposure change factor
-    *change_factor = auto_exposure(rgb12, width, height, 1800, 3700, 4090);
+    *change_factor = auto_exposure(rgb12, width, height, 1800, 3700, 4090, &cam_white);
 
 cleanup:
     free(bayer12);

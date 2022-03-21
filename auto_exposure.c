@@ -157,20 +157,41 @@ double auto_hdr_shadow(const uint16_t *img_rgb, uint16_t width, uint16_t height,
 /* Returns exposure multiplication factor to make the 90th percentile value of the brightest
  * channel equal to percentile90 argument. However, the returned factor would be reduced
  * if needed to ensure the 99.5th percentile of the brightest channel <= percentile99;
+ *
+ * Note: this assumes green is the brightest channel in camera space
  */
 double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
-        uint16_t percentile90, uint16_t percentile99, uint16_t white)
+        uint16_t percentile90, uint16_t percentile99, uint16_t white,
+        const ColourPixel *cam_white)
 {
-    uint16_t p10, p90, p99;
-    if (exposure_percentiles(img_rgb, width, height, &p10, &p90, &p99))
+    uint16_t p10[3], p90[3], p99[3];
+    if (exposure_percentiles_rgb(img_rgb, width, height, p10, p90, p99))
         return 1.0;
 
+    double red_factor = cam_white->p[1] / cam_white->p[0];
+    double blue_factor = cam_white->p[1] / cam_white->p[2];
+    p10[0] *= red_factor;
+    p90[0] *= red_factor;
+    p99[0] *= red_factor;
+    p10[2] *= blue_factor;
+    p90[2] *= blue_factor;
+    p99[2] *= blue_factor;
+
+    uint16_t p10_max = 0;
+    uint16_t p90_max = 0;
+    uint16_t p99_max = 0;
+    for (int chan = 0; chan < 3; chan++) {
+        if (p10[chan] > p10_max) p10_max = p10[chan];
+        if (p90[chan] > p90_max) p90_max = p90[chan];
+        if (p99[chan] > p99_max) p99_max = p99[chan];
+    }
+
     // quickly darken if p99 is clipped
-    if (p99 >= white) return 0.5;
+    if (p99_max >= white) return 0.5;
 
     // now calculate the exposure change factor based on our rules
-    double gain90 = (double)percentile90 / p90;
-    double gain99 = (double)percentile99 / p99;
+    double gain90 = (double)percentile90 / p90_max;
+    double gain99 = (double)percentile99 / p99_max;
 
     return gain90 < gain99 ? gain90 : gain99;
 }
