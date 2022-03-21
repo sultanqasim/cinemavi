@@ -26,11 +26,11 @@ public:
 public slots:
     void setImage(const CMRawImage &img);
     void renderDone(const QPixmap &pm);
-    void saveDone();
+    void saveDone(bool success);
 
 signals:
     void imageRendered(const QPixmap &pm);
-    void imageSaved();
+    void imageSaved(bool success);
 
 private:
     QThread renderThread;

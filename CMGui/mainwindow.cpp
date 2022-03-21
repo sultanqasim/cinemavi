@@ -116,7 +116,7 @@ void MainWindow::onOpenRaw()
         CMRawImage img;
         this->cameraInterface->stopCapture();
         this->camControls->setHidden(true);
-        img.setImage(raw, cmrh.cinfo);
+        img.setImage(raw, cmrh);
         this->renderQueue->setImageLater(img);
         free(raw);
 
@@ -181,18 +181,37 @@ void MainWindow::onShoot()
         return;
     }
 
+    QString suffix;
+    switch(this->camControls->captureFormat()) {
+    case CMCAP_CMRAW:
+        suffix = ".cmr";
+        break;
+    case CMCAP_DNG:
+        suffix = ".dng";
+        break;
+    case CMCAP_TIFF:
+        suffix = ".tiff";
+        break;
+    case CMCAP_JPEG:
+        suffix = ".jpg";
+        break;
+    }
+
     QDateTime t = QDateTime::currentDateTime();
     QString baseName = "CMIMG_" + t.toString("yyyy-MM-dd_hh-mm-ss");
-    QString fileName = saveDir + "/" + baseName + ".tiff";
+    QString fileName = saveDir + "/" + baseName + suffix;
     this->saveAction->setEnabled(false);
     this->camControls->setShootEnabled(false);
     this->renderQueue->saveImage(fileName);
 }
 
-void MainWindow::onSaveDone()
+void MainWindow::onSaveDone(bool success)
 {
     this->saveAction->setEnabled(true);
     this->camControls->setShootEnabled(true);
+
+    if (!success)
+        QMessageBox::critical(this, "", tr("Error saving image"));
 }
 
 void MainWindow::onAutoWhiteBalance(CMAutoWhiteMode mode)

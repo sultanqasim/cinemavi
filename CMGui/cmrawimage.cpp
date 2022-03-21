@@ -3,24 +3,25 @@
 
 CMRawImage::CMRawImage()
 {
-    memset(&this->cinfo, 0, sizeof(this->cinfo));
+    memset(&this->cmrh, 0, sizeof(this->cmrh));
 }
 
-void CMRawImage::setImage(const void *raw, const CMCaptureInfo &cinfo)
+void CMRawImage::setImage(const void *raw, const CMRawHeader &cmrh)
 {
     size_t imgSz;
-    if (cinfo.pixel_fmt == CM_PIXEL_FMT_BAYER_RG12P || cinfo.pixel_fmt == CM_PIXEL_FMT_MONO12P)
-        imgSz = (cinfo.width * 3 / 2) * cinfo.height;
-    else if (cinfo.pixel_fmt == CM_PIXEL_FMT_BAYER_RG12 ||
-             cinfo.pixel_fmt == CM_PIXEL_FMT_BAYER_RG16 ||
-             cinfo.pixel_fmt == CM_PIXEL_FMT_MONO12 ||
-             cinfo.pixel_fmt == CM_PIXEL_FMT_MONO16)
-        imgSz = cinfo.width * cinfo.height * 2;
+    if (cmrh.cinfo.pixel_fmt == CM_PIXEL_FMT_BAYER_RG12P ||
+            cmrh.cinfo.pixel_fmt == CM_PIXEL_FMT_MONO12P)
+        imgSz = (cmrh.cinfo.width * 3 / 2) * cmrh.cinfo.height;
+    else if (cmrh.cinfo.pixel_fmt == CM_PIXEL_FMT_BAYER_RG12 ||
+             cmrh.cinfo.pixel_fmt == CM_PIXEL_FMT_BAYER_RG16 ||
+             cmrh.cinfo.pixel_fmt == CM_PIXEL_FMT_MONO12 ||
+             cmrh.cinfo.pixel_fmt == CM_PIXEL_FMT_MONO16)
+        imgSz = cmrh.cinfo.width * cmrh.cinfo.height * 2;
     else
         imgSz = 0; // unsupported for now
     this->rawData.resize(imgSz);
     memcpy(this->rawData.data(), raw, imgSz);
-    this->cinfo = cinfo;
+    this->cmrh = cmrh;
 }
 
 const void * CMRawImage::getRaw() const
@@ -30,11 +31,16 @@ const void * CMRawImage::getRaw() const
 
 const CMCaptureInfo & CMRawImage::getCaptureInfo() const
 {
-    return this->cinfo;
+    return this->cmrh.cinfo;
+}
+
+const CMRawHeader & CMRawImage::getRawHeader() const
+{
+    return this->cmrh;
 }
 
 bool CMRawImage::isEmpty() const
 {
-    uint32_t imSz = this->cinfo.width * this->cinfo.height;
+    uint32_t imSz = this->cmrh.cinfo.width * this->cmrh.cinfo.height;
     return imSz == 0;
 }

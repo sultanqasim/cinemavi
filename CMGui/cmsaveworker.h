@@ -17,7 +17,7 @@ public slots:
     void save();
 
 signals:
-    void imageSaved();
+    void imageSaved(bool success);
 
 private:
     ImagePipelineParams plParams;

@@ -11,7 +11,8 @@
 typedef enum {
     CMCAP_CMRAW,
     CMCAP_DNG,
-    CMCAP_TIFF
+    CMCAP_TIFF,
+    CMCAP_JPEG
 } CMCaptureFormat;
 
 class CMCameraControls : public QWidget

@@ -33,7 +33,7 @@ public slots:
     void onOpenCamera();
     void onSaveImage();
     void onShoot();
-    void onSaveDone();
+    void onSaveDone(bool success);
     void onAutoWhiteBalance(CMAutoWhiteMode mode);
     void onPicturePressed(uint16_t posX, uint16_t posY);
     void onImageCaptured(const CMRawImage &img);

@@ -51,6 +51,7 @@ CMCameraControls::CMCameraControls(QWidget *parent)
     this->formatSelector->addItem(tr("CMRAW"), CMCAP_CMRAW);
     this->formatSelector->addItem(tr("DNG"), CMCAP_DNG);
     this->formatSelector->addItem(tr("TIFF"), CMCAP_TIFF);
+    this->formatSelector->addItem(tr("JPEG"), CMCAP_JPEG);
     cgl->addWidget(formatLabel, 0, 0);
     cgl->addWidget(formatSelector, 0, 1);
     QLabel *pathLabel = new QLabel(tr("Path"), captureGroup);

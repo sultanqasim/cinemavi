@@ -184,25 +184,12 @@ void CMCameraInterface::captureLoop()
     while (this->capturing) {
         ArvBuffer *buf = arv_stream_timeout_pop_buffer(this->stream, 300000);
         if (ARV_IS_BUFFER(buf)) {
+            CMRawHeader cmrh;
+            const void *raw = cinemavi_prepare_header(buf, &cmrh, this->cameraMake.c_str(),
+                    this->cameraModel.c_str(), this->shutter, this->gain);
+
             CMRawImage img;
-            CMCaptureInfo cinfo = {};
-            cinfo.width = arv_buffer_get_image_width(buf);
-            cinfo.height = arv_buffer_get_image_height(buf);
-            cinfo.shutter_us = this->shutter;
-            cinfo.gain_dB = this->gain;
-            cinfo.focal_len_mm = 8.0; // TODO: don't hard code
-
-            ArvPixelFormat pfmt = arv_buffer_get_image_pixel_format(buf);
-            if (pfmt == ARV_PIXEL_FORMAT_BAYER_RG_12P)
-                cinfo.pixel_fmt = CM_PIXEL_FMT_BAYER_RG12P;
-            else if (pfmt == ARV_PIXEL_FORMAT_BAYER_RG_12)
-                cinfo.pixel_fmt = CM_PIXEL_FMT_BAYER_RG12;
-            else // TODO: handle other pixel formats properly
-                cinfo.pixel_fmt = CM_PIXEL_FMT_MONO12;
-
-            size_t imsz;
-            const void *raw = (const void *)arv_buffer_get_data(buf, &imsz);
-            img.setImage(raw, cinfo);
+            img.setImage(raw, cmrh);
 
             // reuse buffer
             arv_stream_push_buffer(this->stream, buf);

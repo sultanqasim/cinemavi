@@ -104,12 +104,12 @@ bool CMRenderQueue::saveImage(const QString &fileName)
     return true;
 }
 
-void CMRenderQueue::saveDone()
+void CMRenderQueue::saveDone(bool success)
 {
     saveThread.quit();
     saveThread.wait();
     saving = false;
-    emit imageSaved();
+    emit imageSaved(success);
 }
 
 // Enqueues set image operation at end of signal queue
