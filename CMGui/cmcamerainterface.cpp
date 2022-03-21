@@ -191,7 +191,6 @@ void CMCameraInterface::captureLoop()
             cinfo.shutter_us = this->shutter;
             cinfo.gain_dB = this->gain;
             cinfo.focal_len_mm = 8.0; // TODO: don't hard code
-            cinfo.pixel_pitch_um = 3.45; // TODO: don't hard code
 
             ArvPixelFormat pfmt = arv_buffer_get_image_pixel_format(buf);
             if (pfmt == ARV_PIXEL_FORMAT_BAYER_RG_12P)

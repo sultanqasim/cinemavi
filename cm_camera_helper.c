@@ -68,9 +68,8 @@ const void * cinemavi_prepare_header(ArvBuffer *buffer, CMRawHeader *cmrh,
     cmrh->cinfo.shutter_us = shutter;
     cmrh->cinfo.gain_dB = gain;
 
-    // hard code these for now
+    // hard code for now
     cmrh->cinfo.focal_len_mm = 8.0;
-    cmrh->cinfo.pixel_pitch_um = 3.45;
 
     return imbuf;
 }

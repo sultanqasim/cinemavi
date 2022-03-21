@@ -44,7 +44,7 @@ typedef struct {
     float shutter_us;
     float gain_dB;
     float focal_len_mm;
-    float pixel_pitch_um;
+    float reserved;
     float white_x;          // CIE xy chromaticity of white
     float white_y;          // for as-shot white balance
 } CMCaptureInfo;
