@@ -8,10 +8,10 @@
 #include "../pipeline.h"
 
 typedef enum {
-    CMEXP_MANUAL,
     CMEXP_AUTO,
     CMEXP_SHUTTER_PRIORITY,
-    CMEXP_GAIN_PRIORITY
+    CMEXP_GAIN_PRIORITY,
+    CMEXP_MANUAL
 } CMExposureMode;
 
 class CMAutoExposure : public QObject

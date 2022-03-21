@@ -1,6 +1,7 @@
 #include "cmcamerainterface.h"
 #include "../cm_camera_helper.h"
 #include <QMutexLocker>
+#include <cmath>
 
 CMCameraInterface::CMCameraInterface()
 {
@@ -112,21 +113,42 @@ void CMCameraInterface::getExposure(double *shutter_us, double *gain_dB)
     *gain_dB = this->gain;
 }
 
-void CMCameraInterface::updateExposure(double changeFactor)
+void CMCameraInterface::updateExposure(CMExposureMode expMode, double changeFactor)
 {
-    ExposureLimits limits;
-    limits.shutter_targ_low = 8000;
-    limits.shutter_targ_high = 30000;
-    limits.gain_targ_low = 5;
-    limits.gain_targ_high = 15;
-    limits.shutter_min = this->shutterMin;
-    limits.shutter_max = 250000; // minimum 4 fps
-    limits.gain_min = this->gainMin;
-    limits.gain_max = this->gainMax;
-
-    ExposureParams currentExp = {.shutter_us = this->shutter, .gain_dB = this->gain};
     ExposureParams newExp;
-    calculate_exposure(&currentExp, &newExp, &limits, changeFactor);
+    double maxShutterOk = 250000; // 4 fps minimum
+    if (maxShutterOk > this->shutterMax)
+        maxShutterOk = this->shutterMax;
+
+    if (expMode == CMEXP_SHUTTER_PRIORITY) {
+        newExp.shutter_us = this->shutter;
+        newExp.gain_dB = 20 * log10(pow(10, this->gain / 20) * changeFactor);
+        if (newExp.gain_dB > this->gainMax)
+            newExp.gain_dB = this->gainMax;
+        else if (newExp.gain_dB < this->gainMin)
+            newExp.gain_dB = this->gainMin;
+    } else if (expMode == CMEXP_GAIN_PRIORITY) {
+        newExp.shutter_us = this->shutter * changeFactor;
+        newExp.gain_dB = this->gain;
+        if (newExp.shutter_us > maxShutterOk)
+            newExp.shutter_us = maxShutterOk;
+        else if (newExp.shutter_us < this->shutterMin)
+            newExp.shutter_us = this->shutterMin;
+    } else {
+        ExposureLimits limits;
+        limits.shutter_targ_low = 8000;
+        limits.shutter_targ_high = 30000;
+        limits.gain_targ_low = 5;
+        limits.gain_targ_high = 15;
+        limits.shutter_min = this->shutterMin;
+        limits.shutter_max = maxShutterOk;
+        limits.gain_min = this->gainMin;
+        limits.gain_max = this->gainMax;
+
+        ExposureParams currentExp = {.shutter_us = this->shutter, .gain_dB = this->gain};
+        calculate_exposure(&currentExp, &newExp, &limits, changeFactor);
+    }
+
     this->setExposure(newExp.shutter_us, newExp.gain_dB);
 }
 

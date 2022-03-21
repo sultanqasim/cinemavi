@@ -26,10 +26,10 @@ CMCameraControls::CMCameraControls(QWidget *parent)
     egl->setColumnStretch(1, 1);
     QLabel *modeLabel = new QLabel(tr("Mode"), exposureGroup);
     this->expModeSelector = new QComboBox(exposureGroup);
-    this->expModeSelector->addItem(tr("Manual"), CMEXP_MANUAL);
     this->expModeSelector->addItem(tr("Auto"), CMEXP_AUTO);
     this->expModeSelector->addItem(tr("Shutter Priority"), CMEXP_SHUTTER_PRIORITY);
     this->expModeSelector->addItem(tr("Gain Priority"), CMEXP_GAIN_PRIORITY);
+    this->expModeSelector->addItem(tr("Manual"), CMEXP_MANUAL);
     egl->addWidget(modeLabel, 0, 0);
     egl->addWidget(expModeSelector, 0, 1);
     QLabel *shutterLabel = new QLabel(tr("Shutter (ms)"), exposureGroup);
@@ -91,10 +91,6 @@ void CMCameraControls::onExpModeChanged(int index)
     CMExposureMode expMode = (CMExposureMode)index;
     emit exposureChanged(expMode, this->shutterSlider->value() * 1000, this->gainSlider->value());
     switch (expMode) {
-    case CMEXP_MANUAL:
-        this->shutterSlider->setReadOnly(false);
-        this->gainSlider->setReadOnly(false);
-        break;
     case CMEXP_AUTO:
         this->shutterSlider->setReadOnly(true);
         this->gainSlider->setReadOnly(true);
@@ -105,6 +101,10 @@ void CMCameraControls::onExpModeChanged(int index)
         break;
     case CMEXP_GAIN_PRIORITY:
         this->shutterSlider->setReadOnly(true);
+        this->gainSlider->setReadOnly(false);
+        break;
+    case CMEXP_MANUAL:
+        this->shutterSlider->setReadOnly(false);
         this->gainSlider->setReadOnly(false);
         break;
     }
@@ -154,12 +154,12 @@ double CMCameraControls::getGain()
     return this->gainSlider->value();
 }
 
-CMCaptureFormat CMCameraControls::getCaptureFormat()
+CMCaptureFormat CMCameraControls::captureFormat()
 {
     return (CMCaptureFormat)this->formatSelector->currentIndex();
 }
 
-CMExposureMode CMCameraControls::getExposureMode()
+CMExposureMode CMCameraControls::exposureMode()
 {
     return (CMExposureMode)this->expModeSelector->currentIndex();
 }

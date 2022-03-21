@@ -373,7 +373,7 @@ int pipeline_auto_exposure(const void *raw, const CMCaptureInfo *cinfo,
     // scale auto exposure targets for each colour channel accordingly
 
     // Step 3: compute exposure change factor
-    *change_factor = auto_exposure(rgb12, width, height, 2000, 3700, 4090);
+    *change_factor = auto_exposure(rgb12, width, height, 1800, 3700, 4090);
 
 cleanup:
     free(bayer12);

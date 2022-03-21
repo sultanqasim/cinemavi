@@ -51,6 +51,8 @@ MainWindow::MainWindow(QWidget *parent)
     this->camControls->setFixedWidth(400);
     this->camControls->setHidden(true); // only visible when camera is running
     connect(this->camControls, &CMCameraControls::shootClicked, this, &MainWindow::onShoot);
+    connect(this->camControls, &CMCameraControls::exposureChanged,
+            this, &MainWindow::onExposureChanged);
 
     this->renderQueue = new CMRenderQueue(this);
     connect(this->renderQueue, &CMRenderQueue::imageRendered,
@@ -214,16 +216,24 @@ void MainWindow::onPicturePressed(uint16_t posX, uint16_t posY)
 void MainWindow::onImageCaptured(const CMRawImage &img)
 {
     this->renderQueue->setImage(img);
-    this->autoExposure->setImage(img);
+
+    if (this->camControls->exposureMode() != CMEXP_MANUAL)
+        this->autoExposure->setImage(img);
 }
 
 void MainWindow::onExposureUpdate(double changeFactor)
 {
     double shutter_us, gain_dB;
-    this->cameraInterface->updateExposure(changeFactor);
+    this->cameraInterface->updateExposure(this->camControls->exposureMode(), changeFactor);
     this->cameraInterface->getExposure(&shutter_us, &gain_dB);
     this->camControls->setShutter(shutter_us);
     this->camControls->setGain(gain_dB);
+}
+
+void MainWindow::onExposureChanged(CMExposureMode mode, double shutter_us, double gain_dB)
+{
+    if (mode != CMEXP_AUTO)
+        this->cameraInterface->setExposure(shutter_us, gain_dB);
 }
 
 void MainWindow::onClose()

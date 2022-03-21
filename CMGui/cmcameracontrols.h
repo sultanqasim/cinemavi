@@ -20,11 +20,11 @@ class CMCameraControls : public QWidget
 public:
     explicit CMCameraControls(QWidget *parent = nullptr);
     QString saveDir();
-    CMCaptureFormat getCaptureFormat();
+    CMCaptureFormat captureFormat();
     void setShootEnabled(bool e);
     void setShutter(double shutter_us);
     void setGain(double gain_dB);
-    CMExposureMode getExposureMode();
+    CMExposureMode exposureMode();
     double getShutter();
     double getGain();
 

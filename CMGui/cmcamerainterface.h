@@ -7,6 +7,7 @@
 #include <QMutex>
 #include <QString>
 #include "cmrawimage.h"
+#include "cmautoexposure.h"
 #include "../auto_exposure.h"
 
 class CMCameraInterface : public QObject
@@ -20,7 +21,7 @@ public:
     void setFrameRate(double frameRate);
     void setExposure(double shutter_us, double gain_dB);
     void getExposure(double *shutter_us, double *gain_dB);
-    void updateExposure(double changeFactor);
+    void updateExposure(CMExposureMode expMode, double changeFactor);
     void startCapture();
     void stopCapture();
     const std::string & getCameraMake();

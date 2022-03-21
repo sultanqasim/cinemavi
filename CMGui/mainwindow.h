@@ -38,6 +38,7 @@ public slots:
     void onPicturePressed(uint16_t posX, uint16_t posY);
     void onImageCaptured(const CMRawImage &img);
     void onExposureUpdate(double changeFactor);
+    void onExposureChanged(CMExposureMode mode, double shutter_us, double gain_dB);
     void onClose();
 
 private:
