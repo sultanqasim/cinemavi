@@ -8,8 +8,10 @@
 #include <QPixmap>
 #include <QScrollArea>
 #include <QFileInfo>
+#include <QAction>
 #include "cmpicturelabel.h"
 #include "cmcontrolswidget.h"
+#include "cmcameracontrols.h"
 #include "cmrenderqueue.h"
 #include "cmautoexposure.h"
 
@@ -30,6 +32,8 @@ public slots:
     void onOpenRaw();
     void onOpenCamera();
     void onSaveImage();
+    void onShoot();
+    void onSaveDone();
     void onAutoWhiteBalance(CMAutoWhiteMode mode);
     void onPicturePressed(uint16_t posX, uint16_t posY);
     void onImageCaptured(const CMRawImage &img);
@@ -40,6 +44,8 @@ private:
     Ui::MainWindow *ui;
     CMPictureLabel *imgLabel;
     CMControlsWidget *controls;
+    CMCameraControls *camControls;
+    QAction *saveAction;
     CMRenderQueue *renderQueue;
     CMCameraInterface *cameraInterface;
     CMAutoExposure *autoExposure;

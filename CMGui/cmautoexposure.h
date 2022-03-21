@@ -7,6 +7,13 @@
 #include "cmrawimage.h"
 #include "../pipeline.h"
 
+typedef enum {
+    CMEXP_MANUAL,
+    CMEXP_AUTO,
+    CMEXP_SHUTTER_PRIORITY,
+    CMEXP_GAIN_PRIORITY
+} CMExposureMode;
+
 class CMAutoExposure : public QObject
 {
     Q_OBJECT

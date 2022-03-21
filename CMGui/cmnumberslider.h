@@ -13,6 +13,7 @@ public:
     void setMinMax(double minVal, double maxVal, bool logScale = false);
     double value() const;
     void setValue(double val);
+    void setReadOnly(bool ro);
 
 private:
     QDoubleSpinBox *spin;

@@ -19,6 +19,7 @@ public:
     bool cameraAvailable();
     void setFrameRate(double frameRate);
     void setExposure(double shutter_us, double gain_dB);
+    void getExposure(double *shutter_us, double *gain_dB);
     void updateExposure(double changeFactor);
     void startCapture();
     void stopCapture();

@@ -29,7 +29,8 @@ CMNumberSlider::CMNumberSlider(QWidget *parent)
     connect(this->slider, &QSlider::valueChanged, this, &CMNumberSlider::onSlide);
 }
 
-void CMNumberSlider::onSpin(double d) {
+void CMNumberSlider::onSpin(double d)
+{
     int tick;
     if (this->logScale) {
         tick = EPSILON + log(d / this->minVal) * this->invLnStep;
@@ -41,7 +42,8 @@ void CMNumberSlider::onSpin(double d) {
     emit valueChanged(d);
 }
 
-void CMNumberSlider::onSlide(int i) {
+void CMNumberSlider::onSlide(int i)
+{
     double curVal, nextVal;
     if (this->logScale) {
         curVal = this->minVal * pow(this->step, i);
@@ -91,10 +93,18 @@ void CMNumberSlider::setMinMax(double minVal, double maxVal, bool logScale)
     this->onSpin(this->spin->value());
 }
 
-double CMNumberSlider::value() const {
+double CMNumberSlider::value() const
+{
     return this->spin->value();
 }
 
-void CMNumberSlider::setValue(double val) {
+void CMNumberSlider::setValue(double val)
+{
     this->spin->setValue(val);
+}
+
+void CMNumberSlider::setReadOnly(bool ro)
+{
+    this->spin->setReadOnly(ro);
+    this->slider->setEnabled(!ro);
 }

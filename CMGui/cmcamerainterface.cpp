@@ -106,6 +106,12 @@ void CMCameraInterface::setExposure(double shutter_us, double gain_dB)
     }
 }
 
+void CMCameraInterface::getExposure(double *shutter_us, double *gain_dB)
+{
+    *shutter_us = this->shutter;
+    *gain_dB = this->gain;
+}
+
 void CMCameraInterface::updateExposure(double changeFactor)
 {
     ExposureLimits limits;

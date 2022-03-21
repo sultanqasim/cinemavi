@@ -35,6 +35,7 @@ SOURCES += \
     ../noise_reduction.c \
     ../pipeline.c \
     cmautoexposure.cpp \
+    cmcameracontrols.cpp \
     cmcamerainterface.cpp \
     cmcontrolswidget.cpp \
     cmnumberslider.cpp \
@@ -60,8 +61,10 @@ HEADERS += \
     ../noise_reduction.h \
     ../pipeline.h \
     ../tiny_dng_writer.h \
+    ../ycbcr.h \
     ../ycrcg.h \
     cmautoexposure.h \
+    cmcameracontrols.h \
     cmcamerainterface.h \
     cmcontrolswidget.h \
     cmnumberslider.h \

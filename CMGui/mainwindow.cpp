@@ -13,6 +13,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDateTime>
+#include <QDir>
 #include <cstdlib>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -35,23 +36,27 @@ MainWindow::MainWindow(QWidget *parent)
     hbl->addWidget(ctrlWidget);
 
     QScrollArea *ctrlScrollRegionWidget = new QScrollArea(ctrlWidget);
-    QPushButton *shootButton = new QPushButton(ctrlWidget);
+    this->camControls = new CMCameraControls(this);
     vbl->addWidget(ctrlScrollRegionWidget, 1);
-    vbl->addWidget(shootButton);
+    vbl->addWidget(camControls);
 
     ctrlScrollRegionWidget->setFixedWidth(400);
+    ctrlScrollRegionWidget->setMinimumHeight(240);
     this->controls = new CMControlsWidget(ctrlScrollRegionWidget);
     ctrlScrollRegionWidget->setWidget(this->controls);
     connect(this->controls, &CMControlsWidget::paramsChanged, this, &MainWindow::onParamsChanged);
     connect(this->controls, &CMControlsWidget::autoWhiteBalanceTriggered,
             this, &MainWindow::onAutoWhiteBalance);
 
-    shootButton->setText(tr("Shoot"));
-    shootButton->setHidden(true); // should only be visible when camera is running
+    this->camControls->setFixedWidth(400);
+    this->camControls->setHidden(true); // only visible when camera is running
+    connect(this->camControls, &CMCameraControls::shootClicked, this, &MainWindow::onShoot);
 
     this->renderQueue = new CMRenderQueue(this);
     connect(this->renderQueue, &CMRenderQueue::imageRendered,
             this->imgLabel, &CMPictureLabel::setPixmap);
+    connect(this->renderQueue, &CMRenderQueue::imageSaved,
+            this, &MainWindow::onSaveDone);
 
     this->cameraInterface = new CMCameraInterface();
     connect(this->cameraInterface, &CMCameraInterface::imageCaptured,
@@ -68,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *openCameraAction = new QAction(tr("Open camera"), this);
     fileMenu->addAction(openCameraAction);
     connect(openCameraAction, &QAction::triggered, this, &MainWindow::onOpenCamera);
-    QAction *saveAction = new QAction(tr("&Save image..."), this);
+    this->saveAction = new QAction(tr("&Save image..."), this);
     fileMenu->addAction(saveAction);
     connect(saveAction, &QAction::triggered, this, &MainWindow::onSaveImage);
     QAction *closeAction = new QAction(tr("&Close image/camera"), this);
@@ -108,6 +113,7 @@ void MainWindow::onOpenRaw()
     if (rawStat == 0) {
         CMRawImage img;
         this->cameraInterface->stopCapture();
+        this->camControls->setHidden(true);
         img.setImage(raw, cmrh.cinfo);
         this->renderQueue->setImageLater(img);
         free(raw);
@@ -140,6 +146,7 @@ void MainWindow::onOpenCamera()
     this->controls->setShotWhiteBalance();
     this->setWindowTitle(tr("Cinemavi") + " - " + this->cameraInterface->getCameraName());
     this->rawFileInfo.setFile("");
+    this->camControls->setHidden(false);
 }
 
 void MainWindow::onSaveImage()
@@ -159,7 +166,31 @@ void MainWindow::onSaveImage()
             baseName + ".tiff", tr("TIFF Files (*.tiff)"));
     if (fileName.isNull())
         return;
+    this->saveAction->setEnabled(false);
+    this->camControls->setShootEnabled(false);
     this->renderQueue->saveImage(fileName);
+}
+
+void MainWindow::onShoot()
+{
+    QString saveDir = this->camControls->saveDir();
+    if (!QDir().mkpath(saveDir)) {
+        QMessageBox::critical(this, "", tr("Error creating save directory"));
+        return;
+    }
+
+    QDateTime t = QDateTime::currentDateTime();
+    QString baseName = "CMIMG_" + t.toString("yyyy-MM-dd_hh-mm-ss");
+    QString fileName = saveDir + "/" + baseName + ".tiff";
+    this->saveAction->setEnabled(false);
+    this->camControls->setShootEnabled(false);
+    this->renderQueue->saveImage(fileName);
+}
+
+void MainWindow::onSaveDone()
+{
+    this->saveAction->setEnabled(true);
+    this->camControls->setShootEnabled(true);
 }
 
 void MainWindow::onAutoWhiteBalance(CMAutoWhiteMode mode)
@@ -188,13 +219,18 @@ void MainWindow::onImageCaptured(const CMRawImage &img)
 
 void MainWindow::onExposureUpdate(double changeFactor)
 {
+    double shutter_us, gain_dB;
     this->cameraInterface->updateExposure(changeFactor);
+    this->cameraInterface->getExposure(&shutter_us, &gain_dB);
+    this->camControls->setShutter(shutter_us);
+    this->camControls->setGain(gain_dB);
 }
 
 void MainWindow::onClose()
 {
     CMRawImage emptyImg;
     this->cameraInterface->stopCapture();
+    this->camControls->setHidden(true);
     this->renderQueue->setImageLater(emptyImg);
     this->controls->setShotWhiteBalance();
     this->setWindowTitle(tr("Cinemavi"));
