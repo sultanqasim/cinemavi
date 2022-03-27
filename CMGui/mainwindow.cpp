@@ -164,8 +164,12 @@ void MainWindow::onSaveImage()
     } else
         baseName = this->rawFileInfo.baseName();
 
+    /* Crashes on Mac due to Mac OS or QT bug it seems when image formats are part of list
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"),
-            baseName + ".tiff", tr("TIFF Files (*.tiff)"));
+            baseName + ".jpg", tr("CMRAW Files (*.cmr);;DNG Files (*.dng);;TIFF Files (*.tiff);;JPEG Files (*.jpg)"));
+            */
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"),
+            baseName + ".tiff", tr("Image Files (*.cmr *.dng *.tiff *.jpg)"));
     if (fileName.isNull())
         return;
     this->saveAction->setEnabled(false);
