@@ -159,12 +159,10 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     colour_xfrm(rgbf_1, rgbf_0, width, height, &cmat_f);
 
     // Step 4: Noise reduction and convert back to integer
-    if (params->nr_lum <= 0 && params->nr_chrom <= 0) {
-        colour_f2i(rgbf_0, rgb12, width, height, 4095);
-    } else {
-        noise_reduction_median_x_rgb(rgbf_0, rgbf_1, width, height, params->nr_lum, params->nr_chrom);
-        colour_f2i(rgbf_1, rgb12, width, height, 4095);
-    }
+    double nr_thresh_lum = pow(10, (cinfo->gain_dB + params->noise_lum_dB) / 20);
+    double nr_thresh_chrom = pow(10, (cinfo->gain_dB + params->noise_chrom_dB) / 20);
+    noise_reduction_median_x_rgb(rgbf_0, rgbf_1, width, height, nr_thresh_lum, nr_thresh_chrom);
+    colour_f2i(rgbf_1, rgb12, width, height, 4095);
 
     // Step 5: Gamma encode
     pipeline_gen_lut(glut, lut_mode, gamma, shadow, black);

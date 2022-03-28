@@ -25,8 +25,8 @@ typedef struct {
     double tint;
     double hue;
     double sat;
-    double nr_lum;
-    double nr_chrom;
+    double noise_lum_dB;
+    double noise_chrom_dB;
     double gamma;
     double shadow;
     double black;

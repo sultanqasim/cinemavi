@@ -81,12 +81,12 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     nrgl->setColumnStretch(1, 1);
     QLabel *lumaLabel = new QLabel(tr("Luma"), nrGroup);
     lumaSlider = new CMNumberSlider(nrGroup);
-    lumaSlider->setMinMax(0, 0.3);
+    lumaSlider->setMinMax(-100, 0);
     nrgl->addWidget(lumaLabel, 0, 0);
     nrgl->addWidget(lumaSlider, 0, 1);
     QLabel *chromaLabel = new QLabel(tr("Chroma"), nrGroup);
     chromaSlider = new CMNumberSlider(nrGroup);
-    chromaSlider->setMinMax(0, 0.3);
+    chromaSlider->setMinMax(-100, 0);
     nrgl->addWidget(chromaLabel, 1, 0);
     nrgl->addWidget(chromaSlider, 1, 1);
 
@@ -145,8 +145,8 @@ void CMControlsWidget::onReset(void)
     tintSlider->setValue(this->shotTint);
     hueSlider->setValue(0);
     satSlider->setValue(1);
-    lumaSlider->setValue(0.08);
-    chromaSlider->setValue(0.12);
+    lumaSlider->setValue(-35);
+    chromaSlider->setValue(-33);
     gammaSlider->setValue(0.3);
     shadowSlider->setValue(1);
     blackSlider->setValue(0.3);
@@ -211,8 +211,8 @@ void CMControlsWidget::getParams(ImagePipelineParams *params)
     params->tint = this->tintSlider->value();
     params->hue = this->hueSlider->value() * M_PI / 180.0;
     params->sat = this->satSlider->value();
-    params->nr_lum = this->lumaSlider->value();
-    params->nr_chrom = this->chromaSlider->value();
+    params->noise_lum_dB = this->lumaSlider->value();
+    params->noise_chrom_dB = this->chromaSlider->value();
     params->gamma = this->gammaSlider->value();
     params->shadow = this->shadowSlider->value();
     params->black = this->blackSlider->value();
