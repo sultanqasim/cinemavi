@@ -373,6 +373,7 @@ void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
             sur_r = surr_colour_rb_same(bayer, width, x, y);
             sur_g = surr_colour_rb_green(bayer, width, x, y);
             sur_b = surr_colour_rb_opp(bayer, width, x, y);
+            if (sur_r == 0) sur_r = 1;
             rgb[(width*y + x)*3 + 0] = bayer[width*y + x];
             rgb[(width*y + x)*3 + 1] = bayer[width*y + x] * sur_g / sur_r;
             rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_r;
@@ -382,6 +383,7 @@ void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
             sur_r = surr_colour_g_rowadj(bayer, width, x, y);
             sur_g = surr_colour_g_green(bayer, width, x, y);
             sur_b = surr_colour_g_coladj(bayer, width, x, y);
+            if (sur_g == 0) sur_g = 1;
             rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_g;
             rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
             rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_g;
@@ -395,6 +397,7 @@ void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
             sur_r = surr_colour_g_coladj(bayer, width, x, y);
             sur_g = surr_colour_g_green(bayer, width, x, y);
             sur_b = surr_colour_g_rowadj(bayer, width, x, y);
+            if (sur_g == 0) sur_g = 1;
             rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_g;
             rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
             rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_g;
@@ -404,6 +407,7 @@ void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
             sur_r = surr_colour_rb_opp(bayer, width, x, y);
             sur_g = surr_colour_rb_green(bayer, width, x, y);
             sur_b = surr_colour_rb_same(bayer, width, x, y);
+            if (sur_b == 0) sur_b = 1;
             rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_b;
             rgb[(width*y + x)*3 + 1] = bayer[width*y + x] * sur_g / sur_b;
             rgb[(width*y + x)*3 + 2] = bayer[width*y + x];
