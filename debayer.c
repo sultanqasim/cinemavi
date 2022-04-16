@@ -33,6 +33,11 @@ void unpack12_16(uint16_t *unpacked, const void *packed12, size_t num_elems, boo
     }
 }
 
+static inline uint16_t bayer_pixel(const uint16_t *bayer, uint16_t width, uint16_t x, uint16_t y)
+{
+    return bayer[(y * width) + x];
+}
+
 // rgb array is row major, contiguous rgb triplets for each pixel
 
 // classic full resolution debayer
@@ -47,86 +52,76 @@ void debayer22(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
     assert(width >= 2);
     assert(height >= 2);
 
-    // top left would be handled by main loop
-    // rgb[0] = bayer[0];
-    // rgb[1] = bayer[1] + bayer[width];
-    // rgb[2] = bayer[width + 1];
-
-    // top right
-    rgb[(width - 1)*3 + 0] = bayer[width - 2];
-    rgb[(width - 1)*3 + 1] = bayer[width - 1];
-    rgb[(width - 1)*3 + 2] = bayer[width*2 - 1];
-
-    // bottom left
-    rgb[width*(height - 1)*3 + 0] = bayer[width*(height - 2)];
-    rgb[width*(height - 1)*3 + 1] = bayer[width*(height - 1)];
-    rgb[width*(height - 1)*3 + 2] = bayer[width*(height - 1) + 1];
-
     // bottom right
-    rgb[(width*height - 1)*3 + 0] = bayer[width*(height - 1) - 2];
-    rgb[(width*height - 1)*3 + 1] = bayer[width*(height - 1) - 1];
-    rgb[(width*height - 1)*3 + 2] = bayer[width*height - 1];
+    // other corners would be handled by main loop
+    rgb[(width*height - 1)*3 + 0] = bayer_pixel(bayer, width, width - 2, height - 2);
+    rgb[(width*height - 1)*3 + 1] = bayer_pixel(bayer, width, width - 2, height - 1);
+    rgb[(width*height - 1)*3 + 2] = bayer_pixel(bayer, width, width - 1, height - 1);
 
-    // right side (BG)
-    for (size_t y = 1; y < height - 1;) {
-        // blue pixel
-        rgb[(width*(y+1) - 1)*3 + 0] = bayer[width*(y+2) - 2];
-        rgb[(width*(y+1) - 1)*3 + 1] = bayer[width*(y+1) - 2];
-        rgb[(width*(y+1) - 1)*3 + 2] = bayer[width*(y+1) - 1];
+    size_t x, y;
+
+    // right side (GB)
+    x = width - 1;
+    for (y = 0; y < height - 1;) {
+        // green pixel
+        rgb[(width*y + x)*3 + 0] = bayer_pixel(bayer, width, x - 1, y + 0);
+        rgb[(width*y + x)*3 + 1] = bayer_pixel(bayer, width, x - 0, y + 0);
+        rgb[(width*y + x)*3 + 2] = bayer_pixel(bayer, width, x - 0, y + 1);
         y++;
 
-        // green pixel
-        rgb[(width*(y+1) - 1)*3 + 0] = bayer[width*(y+1) - 2];
-        rgb[(width*(y+1) - 1)*3 + 1] = bayer[width*(y+1) - 1];
-        rgb[(width*(y+1) - 1)*3 + 2] = bayer[width*(y+2) - 1];
+        // blue pixel
+        rgb[(width*y + x)*3 + 0] = bayer_pixel(bayer, width, x - 1, y + 1);
+        rgb[(width*y + x)*3 + 1] = bayer_pixel(bayer, width, x - 1, y + 0);
+        rgb[(width*y + x)*3 + 2] = bayer_pixel(bayer, width, x - 0, y + 0);
         y++;
     }
 
-    // bottom row (BG)
-    for (size_t x = 1; x < width - 1;) {
-        // blue pixel
-        rgb[(width*(height-1) + x)*3 + 0] = bayer[width*(height-2) + x + 1];
-        rgb[(width*(height-1) + x)*3 + 1] = bayer[width*(height-1) + x + 1];
-        rgb[(width*(height-1) + x)*3 + 2] = bayer[width*(height-1) + x];
+    // bottom row (GB)
+    y = height - 1;
+    for (x = 0; x < width - 1;) {
+        // green pixel
+        rgb[(width*y + x)*3 + 0] = bayer_pixel(bayer, width, x + 0, y - 1);
+        rgb[(width*y + x)*3 + 1] = bayer_pixel(bayer, width, x + 0, y - 0);
+        rgb[(width*y + x)*3 + 2] = bayer_pixel(bayer, width, x + 1, y - 0);
         x++;
 
-        // green pixel
-        rgb[(width*(height-1) + x)*3 + 0] = bayer[width*(height-2) + x];
-        rgb[(width*(height-1) + x)*3 + 1] = bayer[width*(height-1) + x];
-        rgb[(width*(height-1) + x)*3 + 2] = bayer[width*(height-1) + x + 1];
+        // blue pixel
+        rgb[(width*y + x)*3 + 0] = bayer_pixel(bayer, width, x + 1, y - 1);
+        rgb[(width*y + x)*3 + 1] = bayer_pixel(bayer, width, x + 1, y - 0);
+        rgb[(width*y + x)*3 + 2] = bayer_pixel(bayer, width, x + 0, y - 0);
         x++;
     }
 
     // main loop for rest of image
-    for (size_t y = 0; y < height - 1;) {
+    for (y = 0; y < height - 1;) {
         // RG row
-        for (size_t x = 0; x < width - 1;) {
+        for (x = 0; x < width - 1;) {
             // red pixel
-            rgb[(width*y + x)*3 + 0] = bayer[width*y + x];
-            rgb[(width*y + x)*3 + 1] = bayer[width*y + x + 1];
-            rgb[(width*y + x)*3 + 2] = bayer[width*(y+1) + x + 1];
+            rgb[(width*y + x)*3 + 0] = bayer_pixel(bayer, width, x + 0, y + 0);
+            rgb[(width*y + x)*3 + 1] = bayer_pixel(bayer, width, x + 1, y + 0);
+            rgb[(width*y + x)*3 + 2] = bayer_pixel(bayer, width, x + 1, y + 1);
             x++;
 
             // green pixel
-            rgb[(width*y + x)*3 + 0] = bayer[width*y + x + 1];
-            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
-            rgb[(width*y + x)*3 + 2] = bayer[width*(y+1) + x];
+            rgb[(width*y + x)*3 + 0] = bayer_pixel(bayer, width, x + 1, y + 0);
+            rgb[(width*y + x)*3 + 1] = bayer_pixel(bayer, width, x + 0, y + 0);
+            rgb[(width*y + x)*3 + 2] = bayer_pixel(bayer, width, x + 0, y + 1);
             x++;
         }
         y++;
 
         // GB row
-        for (size_t x = 0; x < width - 1;) {
+        for (x = 0; x < width - 1;) {
             // green pixel
-            rgb[(width*y + x)*3 + 0] = bayer[width*(y+1) + x];
-            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
-            rgb[(width*y + x)*3 + 2] = bayer[width*y + x + 1];
+            rgb[(width*y + x)*3 + 0] = bayer_pixel(bayer, width, x + 0, y + 1);
+            rgb[(width*y + x)*3 + 1] = bayer_pixel(bayer, width, x + 0, y + 0);
+            rgb[(width*y + x)*3 + 2] = bayer_pixel(bayer, width, x + 1, y + 0);
             x++;
 
             // blue pixel
-            rgb[(width*y + x)*3 + 0] = bayer[width*(y+1) + x + 1];
-            rgb[(width*y + x)*3 + 1] = bayer[width*y + x + 1];
-            rgb[(width*y + x)*3 + 2] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 0] = bayer_pixel(bayer, width, x + 1, y + 1);
+            rgb[(width*y + x)*3 + 1] = bayer_pixel(bayer, width, x + 1, y + 0);
+            rgb[(width*y + x)*3 + 2] = bayer_pixel(bayer, width, x + 0, y + 0);
             x++;
         }
         y++;
@@ -264,8 +259,159 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
     }
 }
 
-// TODO
-void debayer55_lumchrom(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height);
+// all these surr_colour_* functions assume (x,y) is at least two pixels away from edge (5x5)
+static inline uint32_t surr_colour_rb_same(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y)
+{
+    // eight surrounding pixels of same colour within 5x5 square
+    uint32_t colour_sum =
+        bayer_pixel(bayer, width, x - 2, y - 2) +
+        bayer_pixel(bayer, width, x + 0, y - 2) +
+        bayer_pixel(bayer, width, x + 2, y - 2) +
+        bayer_pixel(bayer, width, x - 2, y + 0) +
+        bayer_pixel(bayer, width, x + 2, y + 0) +
+        bayer_pixel(bayer, width, x - 2, y + 2) +
+        bayer_pixel(bayer, width, x + 0, y + 2) +
+        bayer_pixel(bayer, width, x + 2, y + 2);
+    return colour_sum / 8;
+}
+
+static inline uint32_t surr_colour_rb_opp(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y)
+{
+    // four surrounding pixels of opposite colour within 3x3 or 5x5 square
+    uint32_t colour_sum =
+        bayer_pixel(bayer, width, x - 1, y - 1) +
+        bayer_pixel(bayer, width, x + 1, y - 1) +
+        bayer_pixel(bayer, width, x - 1, y + 1) +
+        bayer_pixel(bayer, width, x + 1, y + 1);
+    return colour_sum / 4;
+}
+
+static inline uint32_t surr_colour_rb_green(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y)
+{
+    // twelve surrounding green pixels within 5x5 square
+    uint32_t colour_sum =
+        bayer_pixel(bayer, width, x - 1, y - 2) +
+        bayer_pixel(bayer, width, x + 1, y - 2) +
+        bayer_pixel(bayer, width, x - 2, y - 1) +
+        bayer_pixel(bayer, width, x + 0, y - 1) +
+        bayer_pixel(bayer, width, x + 2, y - 1) +
+        bayer_pixel(bayer, width, x - 1, y + 0) +
+        bayer_pixel(bayer, width, x + 1, y + 0) +
+        bayer_pixel(bayer, width, x - 2, y + 1) +
+        bayer_pixel(bayer, width, x + 0, y + 1) +
+        bayer_pixel(bayer, width, x + 2, y + 1) +
+        bayer_pixel(bayer, width, x - 1, y + 2) +
+        bayer_pixel(bayer, width, x + 1, y + 2);
+    return colour_sum / 12;
+}
+
+static inline uint32_t surr_colour_g_rowadj(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y)
+{
+    // six surrounding pixels of other colour in row
+    uint32_t colour_sum =
+        bayer_pixel(bayer, width, x - 1, y - 2) +
+        bayer_pixel(bayer, width, x + 1, y - 2) +
+        bayer_pixel(bayer, width, x - 1, y + 0) +
+        bayer_pixel(bayer, width, x + 1, y + 0) +
+        bayer_pixel(bayer, width, x - 1, y + 2) +
+        bayer_pixel(bayer, width, x + 1, y + 2);
+    return colour_sum / 6;
+}
+
+static inline uint32_t surr_colour_g_coladj(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y)
+{
+    // six surrounding pixels of other colour in column
+    uint32_t colour_sum =
+        bayer_pixel(bayer, width, x - 2, y - 1) +
+        bayer_pixel(bayer, width, x + 0, y - 1) +
+        bayer_pixel(bayer, width, x + 2, y - 1) +
+        bayer_pixel(bayer, width, x - 2, y + 1) +
+        bayer_pixel(bayer, width, x + 0, y + 1) +
+        bayer_pixel(bayer, width, x + 2, y + 1);
+    return colour_sum / 6;
+}
+
+static inline uint32_t surr_colour_g_green(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y)
+{
+    // twelve surrounding green pixels
+    uint32_t colour_sum =
+        bayer_pixel(bayer, width, x - 2, y - 2) +
+        bayer_pixel(bayer, width, x + 0, y - 2) +
+        bayer_pixel(bayer, width, x + 2, y - 2) +
+        bayer_pixel(bayer, width, x - 1, y - 1) +
+        bayer_pixel(bayer, width, x + 1, y - 1) +
+        bayer_pixel(bayer, width, x - 2, y + 0) +
+        bayer_pixel(bayer, width, x + 2, y + 0) +
+        bayer_pixel(bayer, width, x - 1, y + 1) +
+        bayer_pixel(bayer, width, x + 1, y + 1) +
+        bayer_pixel(bayer, width, x - 2, y + 2) +
+        bayer_pixel(bayer, width, x + 0, y + 2) +
+        bayer_pixel(bayer, width, x + 2, y + 2);
+    return colour_sum / 12;
+}
+
+// uses local luminance and surrounding chrominance
+// slow but sharp and avoids moire
+void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height)
+{
+    // TODO: properly handle corners and edges
+    // as a lazy wasteful proof of concept, I'm just doing 2x2 first over whole image
+    debayer22(bayer, rgb, width, height);
+
+    // main loop for centre
+    uint32_t sur_r, sur_g, sur_b;
+    for (size_t y = 2; y < height - 2;) {
+        // RG row
+        for (size_t x = 2; x < width - 2;) {
+            // red pixel
+            sur_r = surr_colour_rb_same(bayer, width, x, y);
+            sur_g = surr_colour_rb_green(bayer, width, x, y);
+            sur_b = surr_colour_rb_opp(bayer, width, x, y);
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x] * sur_g / sur_r;
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_r;
+            x++;
+
+            // green pixel
+            sur_r = surr_colour_g_rowadj(bayer, width, x, y);
+            sur_g = surr_colour_g_green(bayer, width, x, y);
+            sur_b = surr_colour_g_coladj(bayer, width, x, y);
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_g;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_g;
+            x++;
+        }
+        y++;
+
+        // GB row
+        for (size_t x = 2; x < width - 2;) {
+            // green pixel
+            sur_r = surr_colour_g_coladj(bayer, width, x, y);
+            sur_g = surr_colour_g_green(bayer, width, x, y);
+            sur_b = surr_colour_g_rowadj(bayer, width, x, y);
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_g;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_g;
+            x++;
+
+            // blue pixel
+            sur_r = surr_colour_rb_opp(bayer, width, x, y);
+            sur_g = surr_colour_rb_green(bayer, width, x, y);
+            sur_b = surr_colour_rb_same(bayer, width, x, y);
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_b;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x] * sur_g / sur_b;
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x];
+            x++;
+        }
+        y++;
+    }
+}
 
 // fast pixel binned 2x2 debayer
 // rgb output is half the input width and height
