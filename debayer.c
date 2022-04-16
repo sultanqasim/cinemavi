@@ -34,6 +34,107 @@ void unpack12_16(uint16_t *unpacked, const void *packed12, size_t num_elems, boo
 }
 
 // rgb array is row major, contiguous rgb triplets for each pixel
+
+// classic full resolution debayer
+// use local pixel for its channel
+// look right for green or red/blue
+// look down for the third colour
+void debayer22(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height)
+{
+    // assumes width and height are even
+    assert((width & 0x01) == 0);
+    assert((height & 0x01) == 0);
+    assert(width >= 2);
+    assert(height >= 2);
+
+    // top left would be handled by main loop
+    // rgb[0] = bayer[0];
+    // rgb[1] = bayer[1] + bayer[width];
+    // rgb[2] = bayer[width + 1];
+
+    // top right
+    rgb[(width - 1)*3 + 0] = bayer[width - 2];
+    rgb[(width - 1)*3 + 1] = bayer[width - 1];
+    rgb[(width - 1)*3 + 2] = bayer[width*2 - 1];
+
+    // bottom left
+    rgb[width*(height - 1)*3 + 0] = bayer[width*(height - 2)];
+    rgb[width*(height - 1)*3 + 1] = bayer[width*(height - 1)];
+    rgb[width*(height - 1)*3 + 2] = bayer[width*(height - 1) + 1];
+
+    // bottom right
+    rgb[(width*height - 1)*3 + 0] = bayer[width*(height - 1) - 2];
+    rgb[(width*height - 1)*3 + 1] = bayer[width*(height - 1) - 1];
+    rgb[(width*height - 1)*3 + 2] = bayer[width*height - 1];
+
+    // right side (BG)
+    for (size_t y = 1; y < height - 1;) {
+        // blue pixel
+        rgb[(width*(y+1) - 1)*3 + 0] = bayer[width*(y+2) - 2];
+        rgb[(width*(y+1) - 1)*3 + 1] = bayer[width*(y+1) - 2];
+        rgb[(width*(y+1) - 1)*3 + 2] = bayer[width*(y+1) - 1];
+        y++;
+
+        // green pixel
+        rgb[(width*(y+1) - 1)*3 + 0] = bayer[width*(y+1) - 2];
+        rgb[(width*(y+1) - 1)*3 + 1] = bayer[width*(y+1) - 1];
+        rgb[(width*(y+1) - 1)*3 + 2] = bayer[width*(y+2) - 1];
+        y++;
+    }
+
+    // bottom row (BG)
+    for (size_t x = 1; x < width - 1;) {
+        // blue pixel
+        rgb[(width*(height-1) + x)*3 + 0] = bayer[width*(height-2) + x + 1];
+        rgb[(width*(height-1) + x)*3 + 1] = bayer[width*(height-1) + x + 1];
+        rgb[(width*(height-1) + x)*3 + 2] = bayer[width*(height-1) + x];
+        x++;
+
+        // green pixel
+        rgb[(width*(height-1) + x)*3 + 0] = bayer[width*(height-2) + x];
+        rgb[(width*(height-1) + x)*3 + 1] = bayer[width*(height-1) + x];
+        rgb[(width*(height-1) + x)*3 + 2] = bayer[width*(height-1) + x + 1];
+        x++;
+    }
+
+    // main loop for rest of image
+    for (size_t y = 0; y < height - 1;) {
+        // RG row
+        for (size_t x = 0; x < width - 1;) {
+            // red pixel
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x + 1];
+            rgb[(width*y + x)*3 + 2] = bayer[width*(y+1) + x + 1];
+            x++;
+
+            // green pixel
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x + 1];
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 2] = bayer[width*(y+1) + x];
+            x++;
+        }
+        y++;
+
+        // GB row
+        for (size_t x = 0; x < width - 1;) {
+            // green pixel
+            rgb[(width*y + x)*3 + 0] = bayer[width*(y+1) + x];
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x + 1];
+            x++;
+
+            // blue pixel
+            rgb[(width*y + x)*3 + 0] = bayer[width*(y+1) + x + 1];
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x + 1];
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x];
+            x++;
+        }
+        y++;
+    }
+}
+
+// averages RGB values from 3x3 square centred around pixel
+// centre weighted for green
 void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height)
 {
     // assumes width and height are even
@@ -164,7 +265,7 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
 }
 
 // TODO
-void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height);
+void debayer55_lumchrom(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height);
 
 // fast pixel binned 2x2 debayer
 // rgb output is half the input width and height
