@@ -217,6 +217,7 @@ void CMControlsWidget::getParams(ImagePipelineParams *params)
     params->shadow = this->shadowSlider->value();
     params->black = this->blackSlider->value();
     params->lut_mode = (CMLUTMode)this->tmModeSelector->currentIndex();
+    params->nr_mode = CMNR_MEDIAN;
 }
 
 void CMControlsWidget::onBrightsWhiteBalance()

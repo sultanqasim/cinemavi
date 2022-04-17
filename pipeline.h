@@ -19,6 +19,13 @@ typedef enum {
     CMLUT_HDR_CUBIC_AUTO
 } CMLUTMode;
 
+typedef enum {
+    CMNR_NONE,
+    CMNR_GAUSSIAN,
+    CMNR_MEDIAN,
+    CMNR_MEDIAN_STRONG
+} CMNoiseReductionMode;
+
 typedef struct {
     double exposure;
     double temp_K;
@@ -31,6 +38,7 @@ typedef struct {
     double shadow;
     double black;
     CMLUTMode lut_mode;
+    CMNoiseReductionMode nr_mode;
 } ImagePipelineParams;
 
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,
