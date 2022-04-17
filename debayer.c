@@ -356,13 +356,201 @@ static inline uint32_t surr_colour_g_green(const uint16_t *bayer, uint16_t width
     return colour_sum / 12;
 }
 
+// all these surr_colour_edge_* functions perform bounds checking on x and y to ensure no OOB reads at edges
+// they still expect 0 <= x < width and 0 <= y < height to avoid SIGFPE
+
+static inline uint32_t add_pixel_edge(const uint16_t *bayer, uint16_t width, uint16_t height,
+        uint32_t *sum, uint16_t x, uint16_t y)
+{
+    if (x < width && y < height) {
+        *sum += bayer_pixel(bayer, width, x, y);
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+static inline uint32_t surr_colour_edge_rb_same(const uint16_t *bayer, uint16_t width, uint16_t height,
+        uint16_t x, uint16_t y)
+{
+    // up to eight surrounding pixels of same colour within 5x5 square
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 0, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y + 0);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y + 0);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y + 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 0, y + 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y + 2);
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_edge_rb_opp(const uint16_t *bayer, uint16_t width, uint16_t height,
+        uint16_t x, uint16_t y)
+{
+    // up to four surrounding pixels of opposite colour within 3x3 or 5x5 square
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y + 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y + 1);
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_edge_rb_green(const uint16_t *bayer, uint16_t width, uint16_t height,
+        uint16_t x, uint16_t y)
+{
+    // up to twelve surrounding green pixels within 5x5 square
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 0, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y + 0);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y + 0);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y + 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 0, y + 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y + 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y + 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y + 2);
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_edge_g_rowadj(const uint16_t *bayer, uint16_t width, uint16_t height,
+        uint16_t x, uint16_t y)
+{
+    // up to six surrounding pixels of other colour in row
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y + 0);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y + 0);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y + 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y + 2);
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_edge_g_coladj(const uint16_t *bayer, uint16_t width, uint16_t height,
+        uint16_t x, uint16_t y)
+{
+    // up to six surrounding pixels of other colour in column
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 0, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y + 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 0, y + 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y + 1);
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_edge_g_green(const uint16_t *bayer, uint16_t width, uint16_t height,
+        uint16_t x, uint16_t y)
+{
+    // up to twelve surrounding green pixels
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 0, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y - 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y - 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y + 0);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y + 0);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 1, y + 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 1, y + 1);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x - 2, y + 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 0, y + 2);
+    num_pixels += add_pixel_edge(bayer, width, height, &colour_sum, x + 2, y + 2);
+
+    return colour_sum / num_pixels;
+}
+
+static void edge_pixel_debayer55(const uint16_t *bayer, uint16_t *rgb,
+        uint16_t width, uint16_t height, uint16_t x, uint16_t y)
+{
+    uint32_t sur_r, sur_g, sur_b;
+
+    if ((y & 1) == 0) {
+        // RG row
+        if ((x & 1) == 0) {
+            // red pixel
+            sur_r = surr_colour_edge_rb_same(bayer, width, height, x, y);
+            sur_g = surr_colour_edge_rb_green(bayer, width, height, x, y);
+            sur_b = surr_colour_edge_rb_opp(bayer, width, height, x, y);
+            if (sur_r == 0) sur_r = 1;
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x] * sur_g / sur_r;
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_r;
+        } else {
+            // green pixel
+            sur_r = surr_colour_edge_g_rowadj(bayer, width, height, x, y);
+            sur_g = surr_colour_edge_g_green(bayer, width, height, x, y);
+            sur_b = surr_colour_edge_g_coladj(bayer, width, height, x, y);
+            if (sur_g == 0) sur_g = 1;
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_g;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_g;
+        }
+    } else {
+        // GB row
+        if ((x & 1) == 0) {
+            // green pixel
+            sur_r = surr_colour_edge_g_coladj(bayer, width, height, x, y);
+            sur_g = surr_colour_edge_g_green(bayer, width, height, x, y);
+            sur_b = surr_colour_edge_g_rowadj(bayer, width, height, x, y);
+            if (sur_g == 0) sur_g = 1;
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_g;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_g;
+        } else {
+            // blue pixel
+            sur_r = surr_colour_edge_rb_opp(bayer, width, height, x, y);
+            sur_g = surr_colour_edge_rb_green(bayer, width, height, x, y);
+            sur_b = surr_colour_edge_rb_same(bayer, width, height, x, y);
+            if (sur_b == 0) sur_b = 1;
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_b;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x] * sur_g / sur_b;
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x];
+        }
+    }
+}
+
 // uses local luminance and surrounding chrominance
 // slow but sharp and avoids moire
 void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height)
 {
-    // TODO: properly handle corners and edges
-    // as a lazy wasteful proof of concept, I'm just doing 2x2 first over whole image
-    debayer22(bayer, rgb, width, height);
+    // corners and edges
+    for (size_t y = 0; y < 2; y++)
+        for (size_t x = 0; x < width; x++)
+            edge_pixel_debayer55(bayer, rgb, width, height, x, y);
+    for (size_t y = height - 2; y < height; y++)
+        for (size_t x = 0; x < width; x++)
+            edge_pixel_debayer55(bayer, rgb, width, height, x, y);
+    for (size_t x = 0; x < 2; x++)
+        for (size_t y = 2; y < height - 2; y++)
+            edge_pixel_debayer55(bayer, rgb, width, height, x, y);
+    for (size_t x = width - 2; x < width; x++)
+        for (size_t y = 2; y < height - 2; y++)
+            edge_pixel_debayer55(bayer, rgb, width, height, x, y);
 
     // main loop for centre
     uint32_t sur_r, sur_g, sur_b;
