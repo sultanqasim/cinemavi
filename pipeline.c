@@ -126,7 +126,17 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
         status = -EINVAL;
         goto cleanup;
     }
-    debayer33(bayer12, rgb12, width, height);
+    switch (params->debayer_mode) {
+    case CMBAYER_22:
+        debayer22(bayer12, rgb12, width, height);
+        break;
+    case CMBAYER_33:
+        debayer33(bayer12, rgb12, width, height);
+        break;
+    case CMBAYER_55:
+        debayer55(bayer12, rgb12, width, height);
+        break;
+    }
 
     // Step 1.5: Compute auto HDR params if requested
     CMLUTMode lut_mode = params->lut_mode;

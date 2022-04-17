@@ -26,6 +26,12 @@ typedef enum {
     CMNR_MEDIAN_STRONG
 } CMNoiseReductionMode;
 
+typedef enum {
+    CMBAYER_22,
+    CMBAYER_33,
+    CMBAYER_55
+} CMDebayerMode;
+
 typedef struct {
     double exposure;
     double temp_K;
@@ -39,6 +45,7 @@ typedef struct {
     double black;
     CMLUTMode lut_mode;
     CMNoiseReductionMode nr_mode;
+    CMDebayerMode debayer_mode;
 } ImagePipelineParams;
 
 int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *cinfo,

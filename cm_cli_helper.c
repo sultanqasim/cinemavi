@@ -22,7 +22,8 @@ const ImagePipelineParams default_pipeline_params = {
     .shadow = 1,
     .black = 0.3,
     .lut_mode = CMLUT_HDR_CUBIC_AUTO,
-    .nr_mode = CMNR_MEDIAN
+    .nr_mode = CMNR_MEDIAN,
+    .debayer_mode = CMBAYER_33
 };
 
 void cinemavi_generate_dng(const void *raw, const CMRawHeader *cmrh,

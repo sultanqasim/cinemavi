@@ -218,6 +218,7 @@ void CMControlsWidget::getParams(ImagePipelineParams *params)
     params->black = this->blackSlider->value();
     params->lut_mode = (CMLUTMode)this->tmModeSelector->currentIndex();
     params->nr_mode = CMNR_MEDIAN;
+    params->debayer_mode = CMBAYER_33;
 }
 
 void CMControlsWidget::onBrightsWhiteBalance()
