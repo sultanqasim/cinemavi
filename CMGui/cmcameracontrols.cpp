@@ -34,12 +34,12 @@ CMCameraControls::CMCameraControls(QWidget *parent)
     egl->addWidget(expModeSelector, 0, 1);
     QLabel *shutterLabel = new QLabel(tr("Shutter (ms)"), exposureGroup);
     this->shutterSlider = new CMNumberSlider(exposureGroup);
-    this->shutterSlider->setMinMax(0.5, 250, true); // TODO: get values from camera
+    this->shutterSlider->setMinMax(0.5, 250, true);
     egl->addWidget(shutterLabel, 1, 0);
     egl->addWidget(shutterSlider, 1, 1);
     QLabel *gainLabel = new QLabel(tr("Gain (dB)"), exposureGroup);
     this->gainSlider = new CMNumberSlider(exposureGroup);
-    this->gainSlider->setMinMax(1, 48); // TODO: get values from camera
+    this->gainSlider->setMinMax(1, 48);
     egl->addWidget(gainLabel, 2, 0);
     egl->addWidget(gainSlider, 2, 1);
 
@@ -75,6 +75,14 @@ CMCameraControls::CMCameraControls(QWidget *parent)
 void CMCameraControls::setShootEnabled(bool e)
 {
     this->shootButton->setEnabled(e);
+}
+
+void CMCameraControls::setExposureLimits(ExposureLimits &limits)
+{
+    const double maxExpOk = 250000; // avoid super long exposures for live view usability
+    double maxExp = limits.shutter_max > maxExpOk ? maxExpOk : limits.shutter_max;
+    this->shutterSlider->setMinMax(limits.shutter_min * 0.001, maxExp * 0.001, true);
+    this->gainSlider->setMinMax(limits.gain_min, limits.gain_max);
 }
 
 QString CMCameraControls::saveDir()

@@ -7,6 +7,7 @@
 #include <QLineEdit>
 #include "cmnumberslider.h"
 #include "cmautoexposure.h"
+#include "../auto_exposure.h"
 
 typedef enum {
     CMCAP_CMRAW,
@@ -25,6 +26,7 @@ public:
     void setShootEnabled(bool e);
     void setShutter(double shutter_us);
     void setGain(double gain_dB);
+    void setExposureLimits(ExposureLimits &limits);
     CMExposureMode exposureMode();
     double getShutter();
     double getGain();

@@ -148,6 +148,7 @@ void MainWindow::onOpenCamera()
     this->controls->setShotWhiteBalance();
     this->setWindowTitle(tr("Cinemavi") + " - " + this->cameraInterface->getCameraName());
     this->rawFileInfo.setFile("");
+    this->camControls->setExposureLimits(this->cameraInterface->getExposureLimits());
     this->camControls->setHidden(false);
 }
 

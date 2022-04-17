@@ -22,6 +22,7 @@ public:
     void setExposure(double shutter_us, double gain_dB);
     void getExposure(double *shutter_us, double *gain_dB);
     void updateExposure(CMExposureMode expMode, double changeFactor);
+    ExposureLimits & getExposureLimits();
     void startCapture();
     void stopCapture();
     const std::string & getCameraMake();
@@ -41,10 +42,7 @@ private:
     std::string cameraMake;
     std::string cameraModel;
     volatile bool capturing = false;
-    double shutterMin;
-    double shutterMax;
-    double gainMin;
-    double gainMax;
+    ExposureLimits expLimits;
     double frameRateMin;
     double frameRateMax;
     double shutter = 0;

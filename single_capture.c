@@ -13,7 +13,7 @@
 #include "pipeline.h"
 
 static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limits,
-        double *shutter, double *gain)
+        const ExposureLimits *targets, double *shutter, double *gain)
 {
     GError *error = NULL;
     ExposureParams params = {.shutter_us = 1000, .gain_dB = 5};
@@ -54,7 +54,7 @@ static int cinemavi_auto_exposure(ArvCamera *camera, const ExposureLimits *limit
             break;
         }
 
-        calculate_exposure(&params, &params2, limits, change_factor);
+        calculate_exposure(&params, &params2, limits, targets, change_factor);
         params = params2;
         cinemavi_camera_configure_exposure(camera, params.shutter_us, params.gain_dB, &error);
         iterations++;
@@ -86,11 +86,11 @@ int main (int argc, char **argv)
         if (error) goto err;
 
         // Auto exposure settings
-        ExposureLimits limits;
-        limits.shutter_targ_low = 8000;
-        limits.shutter_targ_high = 30000;
-        limits.gain_targ_low = 5;
-        limits.gain_targ_high = 15;
+        ExposureLimits limits, targets;
+        targets.shutter_min = 8000;
+        targets.shutter_max = 30000;
+        targets.gain_min = 5;
+        targets.gain_max = 15;
         if (!error) arv_camera_get_gain_bounds(camera, &limits.gain_min, &limits.gain_max, &error);
         if (!error) arv_camera_get_exposure_time_bounds(camera, &limits.shutter_min, &limits.shutter_max, &error);
         if (error) goto err;
@@ -99,7 +99,7 @@ int main (int argc, char **argv)
         double shutter_us;
         double gain_dB;
         printf("Running auto exposure...\n");
-        if (cinemavi_auto_exposure(camera, &limits, &shutter_us, &gain_dB)) {
+        if (cinemavi_auto_exposure(camera, &limits, &targets, &shutter_us, &gain_dB)) {
             printf("Auto exposure failed.\n");
             goto err;
         }

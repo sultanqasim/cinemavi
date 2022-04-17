@@ -365,7 +365,7 @@ void auto_white_balance_spot(const float *img_rgb, uint16_t width, uint16_t heig
 
 // calculate new shutter speed and gain given supplied constraints
 void calculate_exposure(const ExposureParams *e_old, ExposureParams *e_new,
-        const ExposureLimits *limits, double change_factor)
+        const ExposureLimits *limits, const ExposureLimits *targets, double change_factor)
 {
     if (change_factor <= 0) { // invalid
         *e_new = *e_old;
@@ -375,41 +375,41 @@ void calculate_exposure(const ExposureParams *e_old, ExposureParams *e_new,
     // we'll work with linearized gains, convert back to dB at end
     const double lin_gain_min = pow(10, limits->gain_min / 20);
     const double lin_gain_max = pow(10, limits->gain_max / 20);
-    const double lin_gain_targ_low = pow(10, limits->gain_targ_low / 20);
-    const double lin_gain_targ_high = pow(10, limits->gain_targ_high / 20);
+    const double lin_gain_targ_low = pow(10, targets->gain_min / 20);
+    const double lin_gain_targ_high = pow(10, targets->gain_max / 20);
 
     double cf_root = sqrt(change_factor);
     double shutter = e_old->shutter_us * cf_root;
     double gain = pow(10, e_old->gain_dB / 20) * cf_root;
 
     // try to get gain within targets
-    if (gain > lin_gain_targ_high && shutter < limits->shutter_targ_high) {
+    if (gain > lin_gain_targ_high && shutter < targets->shutter_max) {
         shutter *= gain / lin_gain_targ_high;
         gain = lin_gain_targ_high;
-    } else if (gain < lin_gain_targ_low && shutter > limits->shutter_targ_low) {
+    } else if (gain < lin_gain_targ_low && shutter > targets->shutter_min) {
         shutter *= gain / lin_gain_targ_low;
         gain = lin_gain_targ_low;
     }
 
     // try to get shutter within targets
-    if (shutter > limits->shutter_targ_high && gain < lin_gain_targ_high) {
-        gain *= shutter / limits->shutter_targ_high;
-        shutter = limits->shutter_targ_high;
-    } else if (shutter < limits->shutter_targ_low && gain > lin_gain_targ_low) {
-        gain *= shutter / limits->shutter_targ_low;
-        shutter = limits->shutter_targ_low;
+    if (shutter > targets->shutter_max && gain < lin_gain_targ_high) {
+        gain *= shutter / targets->shutter_max;
+        shutter = targets->shutter_max;
+    } else if (shutter < targets->shutter_min && gain > lin_gain_targ_low) {
+        gain *= shutter / targets->shutter_min;
+        shutter = targets->shutter_min;
     }
 
     // balance shutter and gain when out of target bounds
-    if (gain >= lin_gain_targ_high && shutter >= limits->shutter_targ_high) {
+    if (gain >= lin_gain_targ_high && shutter >= targets->shutter_max) {
         double gain_excess = gain / lin_gain_targ_high;
-        double shutter_excess = shutter / limits->shutter_targ_high;
+        double shutter_excess = shutter / targets->shutter_max;
         double excess_ratio = sqrt(gain_excess * shutter_excess);
         gain *= excess_ratio / gain_excess;
         shutter *= excess_ratio / shutter_excess;
-    } else if (gain <= lin_gain_targ_low && shutter <= limits->shutter_targ_low) {
+    } else if (gain <= lin_gain_targ_low && shutter <= targets->shutter_min) {
         double gain_lack = lin_gain_targ_low / gain;
-        double shutter_lack = limits->shutter_targ_low / shutter;
+        double shutter_lack = targets->shutter_min / shutter;
         double lack_ratio = sqrt(gain_lack * shutter_lack);
         gain *= gain_lack / lack_ratio;
         shutter *= shutter_lack / lack_ratio;

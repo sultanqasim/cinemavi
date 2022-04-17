@@ -47,20 +47,26 @@ typedef struct {
     double gain_dB;
 } ExposureParams;
 
+// shutter in microseconds, gain in dB
 typedef struct {
-    double shutter_min;      // shortest supported shutter time (us)
-    double shutter_max;      // longest supported shutter time (us)
-    double shutter_targ_low; // no improvement in sharpness from further reducing shutter time
-    double shutter_targ_high;// image likely to be blurry above this shutter time
-    double gain_min;         // highest supported gain (dB)
-    double gain_max;         // lowest supported gain (dB)
-    double gain_targ_low;    // noise is not noticeable below this gain
-    double gain_targ_high;   // noise gets obtrusive above this gain
+    double shutter_min;
+    double shutter_max;
+    double gain_min;
+    double gain_max;
 } ExposureLimits;
 
-// calculate new shutter speed and gain given supplied constraints
+/* calculate new shutter speed and gain given supplied constraints
+ *
+ * limits indicates camera hardware limits
+ * targets indicate ranges in which to aim to keep values within
+ *
+ * target shutter_min:  no improvement in sharpness from further reducing shutter time
+ * target shutter_max:  image likely to be blurry above this shutter time
+ * target gain_min:     noise is not noticeable below this gain
+ * target gain_max:     noise gets obtrusive above this gain
+ */
 void calculate_exposure(const ExposureParams *e_old, ExposureParams *e_new,
-        const ExposureLimits *limits, double change_factor);
+        const ExposureLimits *limits, const ExposureLimits *targets, double change_factor);
 
 #ifdef __cplusplus
 }
