@@ -35,6 +35,13 @@ void noise_reduction_median_x_rgb(const float *img_in, float *img_out, unsigned 
 void noise_reduction_median_x_ycbcr(const float *img_in, float *img_out, unsigned int width,
         unsigned int height, float thresh_lum, float thresh_chrom);
 
+// median filter, 3x3 square lum, 9x9 "X" pattern chrom
+void noise_reduction_median_full_x_rgb(const float *img_in, float *img_out, unsigned int width,
+        unsigned int height, float thresh_lum, float thresh_chrom);
+
+void noise_reduction_median_full_x_ycbcr(const float *img_in, float *img_out, unsigned int width,
+        unsigned int height, float thresh_lum, float thresh_chrom);
+
 #ifdef __cplusplus
 }
 #endif

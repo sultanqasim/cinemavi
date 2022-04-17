@@ -58,6 +58,19 @@ float median_pixel_x_55(const float *img, unsigned int width, unsigned int heigh
 float median_pixel_x_77(const float *img, unsigned int width, unsigned int height,
         unsigned int x, unsigned int y, unsigned int chan);
 
+// median value in x pattern of (2k+1) x (2k+1) square centred at (x, y) for selected channel
+// bounds checking is performed, repeating edge pixels
+float median_pixel_full_x_edge(const float *img, unsigned int width, unsigned int height,
+        unsigned int k, unsigned int x, unsigned int y, unsigned int chan);
+
+// similar to above, but optimized for specific square sizes and no edge bounds checking
+float median_pixel_full_x_55(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan);
+float median_pixel_full_x_77(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan);
+float median_pixel_full_x_99(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan);
+
 #ifdef __cplusplus
 }
 #endif

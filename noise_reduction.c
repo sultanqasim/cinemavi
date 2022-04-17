@@ -311,3 +311,101 @@ void noise_reduction_median_x_ycbcr(const float *img_in, float *img_out, unsigne
         }
     }
 }
+
+// expects YCbCr or similar lum/chrom/chrom colour space
+// uses 3x3 window for luminance, 9x9 for chrominance
+static inline void nr_median_pixel_full_x(const float *img_in, float *img_out, unsigned int width,
+        unsigned int height, unsigned int x, unsigned int y, float thresh_lum, float thresh_chrom)
+{
+    if (img_in[image_idx(x, y, 0, width)] >= thresh_lum) {
+        img_out[image_idx(x, y, 0, width)] = img_in[image_idx(x, y, 0, width)];
+    } else {
+        img_out[image_idx(x, y, 0, width)] = median_pixel_33(img_in, width, height, x, y, 0);
+    }
+
+    if (img_in[image_idx(x, y, 0, width)] >= thresh_chrom) {
+        img_out[image_idx(x, y, 1, width)] = img_in[image_idx(x, y, 1, width)];
+        img_out[image_idx(x, y, 2, width)] = img_in[image_idx(x, y, 2, width)];
+    } else {
+        img_out[image_idx(x, y, 1, width)] = median_pixel_full_x_99(img_in, width, height, x, y, 1);
+        img_out[image_idx(x, y, 2, width)] = median_pixel_full_x_99(img_in, width, height, x, y, 2);
+    }
+}
+
+static inline void nr_median_pixel_full_x_edge(const float *img_in, float *img_out, unsigned int width,
+        unsigned int height, unsigned int x, unsigned int y, float thresh_lum, float thresh_chrom)
+{
+    if (img_in[image_idx(x, y, 0, width)] >= thresh_lum) {
+        img_out[image_idx(x, y, 0, width)] = img_in[image_idx(x, y, 0, width)];
+    } else {
+        img_out[image_idx(x, y, 0, width)] = median_pixel_edge(img_in, width, height, 1, x, y, 0);
+    }
+
+    if (img_in[image_idx(x, y, 0, width)] >= thresh_chrom) {
+        img_out[image_idx(x, y, 1, width)] = img_in[image_idx(x, y, 1, width)];
+        img_out[image_idx(x, y, 2, width)] = img_in[image_idx(x, y, 2, width)];
+    } else {
+        img_out[image_idx(x, y, 1, width)] = median_pixel_full_x_edge(img_in, width, height, 4, x, y, 1);
+        img_out[image_idx(x, y, 2, width)] = median_pixel_full_x_edge(img_in, width, height, 4, x, y, 2);
+    }
+}
+
+void noise_reduction_median_full_x_rgb(const float *img_in, float *img_out, unsigned int width,
+        unsigned int height, float thresh_lum, float thresh_chrom)
+{
+    float *img_temp = (float *)malloc(width * height * 3 * sizeof(float));
+    if (img_temp == NULL) {
+        // fail by doing no NR
+        memcpy(img_out, img_in, width * height * 3 * sizeof(float));
+        return;
+    }
+
+    // temporarily put YCbCr original in img_out
+    // img_temp will store YCbCr noise reduced image
+    colour_xfrm(img_in, img_out, width, height, &CMf_sRGB2YCbCr);
+    noise_reduction_median_full_x_ycbcr(img_out, img_temp, width, height, thresh_lum, thresh_chrom);
+    colour_xfrm(img_temp, img_out, width, height, &CMf_YCbCr2sRGB);
+
+    free(img_temp);
+}
+
+void noise_reduction_median_full_x_ycbcr(const float *img_in, float *img_out, unsigned int width,
+        unsigned int height, float thresh_lum, float thresh_chrom)
+{
+    const unsigned int k = 4; // 9x9 is the largest "kernel" (median box) we use
+
+    // top edge
+    for (unsigned int y = 0; y < k; y++) {
+        for (unsigned int x = 0; x < width; x++) {
+            nr_median_pixel_full_x_edge(img_in, img_out, width, height, x, y, thresh_lum, thresh_chrom);
+        }
+    }
+
+    // left edge
+    for (unsigned int y = k; y < height - k; y++) {
+        for (unsigned int x = 0; x < k; x++) {
+            nr_median_pixel_full_x_edge(img_in, img_out, width, height, x, y, thresh_lum, thresh_chrom);
+        }
+    }
+
+    // right edge
+    for (unsigned int y = k; y < height - k; y++) {
+        for (unsigned int x = width - k; x < width; x++) {
+            nr_median_pixel_full_x_edge(img_in, img_out, width, height, x, y, thresh_lum, thresh_chrom);
+        }
+    }
+
+    // bottom edge
+    for (unsigned int y = height - k; y < height; y++) {
+        for (unsigned int x = 0; x < width; x++) {
+            nr_median_pixel_full_x_edge(img_in, img_out, width, height, x, y, thresh_lum, thresh_chrom);
+        }
+    }
+
+    // inside
+    for (unsigned int y = k; y < height - k; y++) {
+        for (unsigned int x = k; x < width - k; x++) {
+            nr_median_pixel_full_x(img_in, img_out, width, height, x, y, thresh_lum, thresh_chrom);
+        }
+    }
+}

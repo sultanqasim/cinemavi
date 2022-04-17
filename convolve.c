@@ -405,14 +405,11 @@ static inline float median_pixel_x(const float *img, unsigned int width, unsigne
 float median_pixel_x_edge(const float *img, unsigned int width, unsigned int height,
         unsigned int k, unsigned int x, unsigned int y, unsigned int chan)
 {
-    // assume k <= x < width - k
-    // assume j <= y < height - k
     // assume 0 <= chan < 3
 
     unsigned int n = 2*k + 1;
-    unsigned int x_base = x - k;
-    unsigned int y_base = y - k;
-    (void)height; // suppress unused warning
+    int x_base = x - k;
+    int y_base = y - k;
     float scratch[5];
 
     // top left, top right, centre, bottom left, bottom right
@@ -446,4 +443,80 @@ float median_pixel_x_77(const float *img, unsigned int width, unsigned int heigh
         unsigned int x, unsigned int y, unsigned int chan)
 {
     return median_pixel_x(img, width, height, 3, x, y, chan);
+}
+
+// median value in x pattern of (2k+1) x (2k+1) square centred at (x, y) for selected channel
+static inline float median_pixel_full_x(const float *img, unsigned int width, unsigned int height,
+        unsigned int k, unsigned int x, unsigned int y, unsigned int chan)
+{
+    // assume k <= x < width - k
+    // assume j <= y < height - k
+    // assume 0 <= chan < 3
+
+    unsigned int n = 2*k + 1;
+    unsigned int x_base = x - k;
+    unsigned int y_base = y - k;
+    (void)height; // suppress unused warning
+    float scratch[2*n - 1];
+
+    unsigned int j = 0;
+    for (unsigned int i = 0; i < k; i++) {
+        scratch[j++] = img[image_idx(x_base + i, y_base + i, chan, width)];
+        scratch[j++] = img[image_idx(x_base + n - 1 - i, y_base + i, chan, width)];
+    }
+    scratch[j++] = img[image_idx(x, y, chan, width)];
+    for (unsigned int i = k + 1; i < n; i++) {
+        scratch[j++] = img[image_idx(x_base + i, y_base + i, chan, width)];
+        scratch[j++] = img[image_idx(x_base + n - 1 - i, y_base + i, chan, width)];
+    }
+
+    return percentile_float_inplace(scratch, 2*n - 1, 0.5);
+}
+
+// same as above but with bounds checking for edge pixels
+float median_pixel_full_x_edge(const float *img, unsigned int width, unsigned int height,
+        unsigned int k, unsigned int x, unsigned int y, unsigned int chan)
+{
+    // assume 0 <= chan < 3
+
+    unsigned int n = 2*k + 1;
+    int x_base = x - k;
+    int y_base = y - k;
+    float scratch[2*n - 1];
+
+    unsigned int j = 0;
+    for (unsigned int i = 0; i < k; i++) {
+        scratch[j++] = img[image_idx(bounded_idx(x_base + i, 0, width),
+                                     bounded_idx(y_base + i, 0, height), chan, width)];
+        scratch[j++] = img[image_idx(bounded_idx(x_base + n - 1 - i, 0, width),
+                                     bounded_idx(y_base + i, 0, height), chan, width)];
+    }
+    scratch[j++] = img[image_idx(bounded_idx(x, 0, width),
+                                 bounded_idx(y, 0, height), chan, width)];
+    for (unsigned int i = k + 1; i < n; i++) {
+        scratch[j++] = img[image_idx(bounded_idx(x_base + i, 0, width),
+                                     bounded_idx(y_base + i, 0, height), chan, width)];
+        scratch[j++] = img[image_idx(bounded_idx(x_base + n - 1 - i, 0, width),
+                                     bounded_idx(y_base + i, 0, height), chan, width)];
+    }
+
+    return percentile_float_inplace(scratch, 2*n - 1, 0.5);
+}
+
+float median_pixel_full_x_55(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan)
+{
+    return median_pixel_full_x(img, width, height, 2, x, y, chan);
+}
+
+float median_pixel_full_x_77(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan)
+{
+    return median_pixel_full_x(img, width, height, 3, x, y, chan);
+}
+
+float median_pixel_full_x_99(const float *img, unsigned int width, unsigned int height,
+        unsigned int x, unsigned int y, unsigned int chan)
+{
+    return median_pixel_full_x(img, width, height, 4, x, y, chan);
 }
