@@ -22,6 +22,8 @@ signals:
     void autoWhiteBalanceTriggered(CMAutoWhiteMode mode);
 
 public slots:
+    void onDebayerModeChanged(int index);
+    void onNRModeChanged(int index);
     void onLUTModeChanged(int index);
     void onSliderChanged(double val);
     void onBrightsWhiteBalance();
@@ -34,6 +36,8 @@ private:
     CMNumberSlider *tintSlider;
     CMNumberSlider *hueSlider;
     CMNumberSlider *satSlider;
+    QComboBox *debayerModeSelector;
+    QComboBox *nrModeSelector;
     CMNumberSlider *lumaSlider;
     CMNumberSlider *chromaSlider;
     QComboBox *tmModeSelector;

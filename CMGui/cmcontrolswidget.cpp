@@ -79,29 +79,44 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     QGridLayout *nrgl = new QGridLayout(nrGroup);
     nrgl->setColumnMinimumWidth(0, 60);
     nrgl->setColumnStretch(1, 1);
+    QLabel *debayerLabel = new QLabel(tr("Debayer"), nrGroup);
+    debayerModeSelector = new QComboBox(nrGroup);
+    debayerModeSelector->addItem(tr("2x2 Basic"), CMBAYER_22);
+    debayerModeSelector->addItem(tr("3x3 Smooth"), CMBAYER_33);
+    debayerModeSelector->addItem(tr("5x5 Sharp"), CMBAYER_55);
+    nrgl->addWidget(debayerLabel, 0, 0);
+    nrgl->addWidget(debayerModeSelector, 0, 1);
+    QLabel *nrModeLabel = new QLabel("Mode", nrGroup);
+    nrModeSelector = new QComboBox(nrGroup);
+    nrModeSelector->addItem(tr("None"), CMNR_NONE);
+    nrModeSelector->addItem(tr("Gaussian Blur"), CMNR_GAUSSIAN);
+    nrModeSelector->addItem(tr("Median Filter"), CMNR_MEDIAN);
+    nrModeSelector->addItem(tr("Strong Median Filter"), CMNR_MEDIAN_STRONG);
+    nrgl->addWidget(nrModeLabel, 1, 0);
+    nrgl->addWidget(nrModeSelector, 1, 1);
     QLabel *lumaLabel = new QLabel(tr("Luma"), nrGroup);
     lumaSlider = new CMNumberSlider(nrGroup);
     lumaSlider->setMinMax(-100, 0);
-    nrgl->addWidget(lumaLabel, 0, 0);
-    nrgl->addWidget(lumaSlider, 0, 1);
+    nrgl->addWidget(lumaLabel, 2, 0);
+    nrgl->addWidget(lumaSlider, 2, 1);
     QLabel *chromaLabel = new QLabel(tr("Chroma"), nrGroup);
     chromaSlider = new CMNumberSlider(nrGroup);
     chromaSlider->setMinMax(-100, 0);
-    nrgl->addWidget(chromaLabel, 1, 0);
-    nrgl->addWidget(chromaSlider, 1, 1);
+    nrgl->addWidget(chromaLabel, 3, 0);
+    nrgl->addWidget(chromaSlider, 3, 1);
 
     QGridLayout *tmgl = new QGridLayout(tmapGroup);
     tmgl->setColumnMinimumWidth(0, 60);
     tmgl->setColumnStretch(1, 1);
     QLabel *tmModeLabel = new QLabel(tr("Mode"), tmapGroup);
     tmModeSelector = new QComboBox(tmapGroup);
-    tmModeSelector->addItem(tr("Linear"), 0);
-    tmModeSelector->addItem(tr("Filmic"), 1);
-    tmModeSelector->addItem(tr("Cubic"), 2);
-    tmModeSelector->addItem(tr("HDR"), 3);
-    tmModeSelector->addItem(tr("HDR Auto"), 4);
-    tmModeSelector->addItem(tr("HDR Cubic"), 5);
-    tmModeSelector->addItem(tr("HDR Cubic Auto"), 6);
+    tmModeSelector->addItem(tr("Linear"), CMLUT_LINEAR);
+    tmModeSelector->addItem(tr("Filmic"), CMLUT_FILMIC);
+    tmModeSelector->addItem(tr("Cubic"), CMLUT_CUBIC);
+    tmModeSelector->addItem(tr("HDR"), CMLUT_HDR);
+    tmModeSelector->addItem(tr("HDR Auto"), CMLUT_HDR_AUTO);
+    tmModeSelector->addItem(tr("HDR Cubic"), CMLUT_HDR_CUBIC);
+    tmModeSelector->addItem(tr("HDR Cubic Auto"), CMLUT_HDR_CUBIC_AUTO);
     tmgl->addWidget(tmModeLabel, 0, 0);
     tmgl->addWidget(tmModeSelector, 0, 1);
     QLabel *gammaLabel = new QLabel(tr("Gamma"), tmapGroup);
@@ -130,6 +145,8 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     connect(this->gammaSlider, &CMNumberSlider::valueChanged, this, &CMControlsWidget::onSliderChanged);
     connect(this->shadowSlider, &CMNumberSlider::valueChanged, this, &CMControlsWidget::onSliderChanged);
     connect(this->blackSlider, &CMNumberSlider::valueChanged, this, &CMControlsWidget::onSliderChanged);
+    connect(this->debayerModeSelector, &QComboBox::currentIndexChanged, this, &CMControlsWidget::onDebayerModeChanged);
+    connect(this->nrModeSelector, &QComboBox::currentIndexChanged, this, &CMControlsWidget::onNRModeChanged);
     connect(this->tmModeSelector, &QComboBox::currentIndexChanged, this, &CMControlsWidget::onLUTModeChanged);
     connect(brightsWhiteButton, &QPushButton::clicked, this, &CMControlsWidget::onBrightsWhiteBalance);
     connect(robustWhiteButton, &QPushButton::clicked, this, &CMControlsWidget::onRobustWhiteBalance);
@@ -150,7 +167,32 @@ void CMControlsWidget::onReset(void)
     gammaSlider->setValue(0.3);
     shadowSlider->setValue(1);
     blackSlider->setValue(0.3);
+    debayerModeSelector->setCurrentIndex(CMBAYER_33);
+    nrModeSelector->setCurrentIndex(CMNR_MEDIAN);
     tmModeSelector->setCurrentIndex(CMLUT_HDR_CUBIC_AUTO);
+}
+
+void CMControlsWidget::onDebayerModeChanged(int index)
+{
+    (void)index; // use unused argument
+    emit paramsChanged();
+}
+
+void CMControlsWidget::onNRModeChanged(int index)
+{
+    CMNoiseReductionMode nrm = (CMNoiseReductionMode)index;
+    switch (nrm) {
+    case CMNR_NONE:
+        lumaSlider->setEnabled(false);
+        chromaSlider->setEnabled(false);
+        break;
+    default:
+        lumaSlider->setEnabled(true);
+        chromaSlider->setEnabled(true);
+        break;
+    }
+
+    emit paramsChanged();
 }
 
 void CMControlsWidget::onLUTModeChanged(int index)
@@ -217,8 +259,8 @@ void CMControlsWidget::getParams(ImagePipelineParams *params)
     params->shadow = this->shadowSlider->value();
     params->black = this->blackSlider->value();
     params->lut_mode = (CMLUTMode)this->tmModeSelector->currentIndex();
-    params->nr_mode = CMNR_MEDIAN;
-    params->debayer_mode = CMBAYER_33;
+    params->nr_mode = (CMNoiseReductionMode)this->nrModeSelector->currentIndex();
+    params->debayer_mode = (CMDebayerMode)this->debayerModeSelector->currentIndex();
 }
 
 void CMControlsWidget::onBrightsWhiteBalance()
