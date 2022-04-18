@@ -81,8 +81,8 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     nrgl->setColumnStretch(1, 1);
     QLabel *debayerLabel = new QLabel(tr("Debayer"), nrGroup);
     debayerModeSelector = new QComboBox(nrGroup);
-    debayerModeSelector->addItem(tr("2x2 Basic"), CMBAYER_22);
-    debayerModeSelector->addItem(tr("3x3 Smooth"), CMBAYER_33);
+    debayerModeSelector->addItem(tr("2x2 Nearest Neighbour"), CMBAYER_22);
+    debayerModeSelector->addItem(tr("3x3 Bilinear"), CMBAYER_33);
     debayerModeSelector->addItem(tr("5x5 Sharp"), CMBAYER_55);
     nrgl->addWidget(debayerLabel, 0, 0);
     nrgl->addWidget(debayerModeSelector, 0, 1);

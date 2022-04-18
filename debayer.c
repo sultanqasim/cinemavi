@@ -144,11 +144,11 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
     rgb[2] = bayer[width + 1];
 
     rgb[(width - 1)*3 + 0] = bayer[width - 2];
-    rgb[(width - 1)*3 + 1] = (bayer[width - 1]*3 + bayer[width*2 - 2]) >> 2;
+    rgb[(width - 1)*3 + 1] = bayer[width - 1];
     rgb[(width - 1)*3 + 2] = bayer[width*2 - 1];
 
     rgb[width*(height - 1)*3 + 0] = bayer[width*(height - 2)];
-    rgb[width*(height - 1)*3 + 1] = (bayer[width*(height - 1)]*3 + bayer[width*(height-2) + 1]) >> 2;
+    rgb[width*(height - 1)*3 + 1] = bayer[width*(height - 1)];
     rgb[width*(height - 1)*3 + 2] = bayer[width*(height - 1) + 1];
 
     rgb[(width*height - 1)*3 + 0] = bayer[width*(height - 1) - 2];
@@ -159,7 +159,7 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
     for (size_t x = 1; x < width - 1;) {
         // green pixel
         rgb[x*3 + 0] = (bayer[x-1] + bayer[x+1]) >> 1;
-        rgb[x*3 + 1] = (bayer[x]*2 + bayer[width+x-1] + bayer[width+x+1]) >> 2;
+        rgb[x*3 + 1] = bayer[x];
         rgb[x*3 + 2] = bayer[width + x];
         x++;
 
@@ -174,7 +174,7 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
     for (size_t y = 1; y < height - 1;) {
         // green pixel
         rgb[width*y*3 + 0] = (bayer[width*(y-1)] + bayer[width*(y+1)]) >> 1;
-        rgb[width*y*3 + 1] = (bayer[width*y]*2 + bayer[width*(y-1) + 1] + bayer[width*(y+1) + 1]) >> 2;
+        rgb[width*y*3 + 1] = bayer[width*y];
         rgb[width*y*3 + 2] = bayer[width*y + 1];
         y++;
 
@@ -195,7 +195,7 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
 
         // green pixel
         rgb[(width*(y+1) - 1)*3 + 0] = bayer[width*(y+1) - 2];
-        rgb[(width*(y+1) - 1)*3 + 1] = (bayer[width*(y+1) - 1]*2 + bayer[width*(y+2) - 2] + bayer[width*y - 2]) >> 2;
+        rgb[(width*(y+1) - 1)*3 + 1] = bayer[width*(y+1) - 1];
         rgb[(width*(y+1) - 1)*3 + 2] = (bayer[width*y - 1] + bayer[width*(y+2) - 1]) >> 1;
         y++;
     }
@@ -211,8 +211,7 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
 
         // green pixel
         rgb[(width*(height-1) + x)*3 + 0] = bayer[width*(height-2) + x];
-        rgb[(width*(height-1) + x)*3 + 1] = (bayer[width*(height-1) + x]*2 + bayer[width*(height-2) + x - 1] +
-                bayer[width*(height-2) + x + 1]) >> 2;
+        rgb[(width*(height-1) + x)*3 + 1] = bayer[width*(height-1) + x];
         rgb[(width*(height-1) + x)*3 + 2] = (bayer[width*(height-1) + x - 1] + bayer[width*(height-1) + x + 1]) >> 1;
         x++;
     }
@@ -231,8 +230,7 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
 
             // green pixel
             rgb[(width*y + x)*3 + 0] = (bayer[width*(y-1) + x] + bayer[width*(y+1) + x]) >> 1;
-            rgb[(width*y + x)*3 + 1] = (bayer[width*y + x]*4 + bayer[width*(y-1) + x - 1] + bayer[width*(y-1) + x + 1] +
-                    bayer[width*(y+1) + x - 1] + bayer[width*(y+1) + x + 1]) >> 3;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
             rgb[(width*y + x)*3 + 2] = (bayer[width*y + x - 1] + bayer[width*y + x + 1]) >> 1;
             x++;
         }
@@ -242,8 +240,7 @@ void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
         for (size_t x = 1; x < width - 1;) {
             // green pixel
             rgb[(width*y + x)*3 + 0] = (bayer[width*y + x - 1] + bayer[width*y + x + 1]) >> 1;
-            rgb[(width*y + x)*3 + 1] = (bayer[width*y + x]*4 + bayer[width*(y-1) + x - 1] + bayer[width*(y-1) + x + 1] +
-                    bayer[width*(y+1) + x - 1] + bayer[width*(y+1) + x + 1]) >> 3;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
             rgb[(width*y + x)*3 + 2] = (bayer[width*(y-1) + x] + bayer[width*(y+1) + x]) >> 1;
             x++;
 
