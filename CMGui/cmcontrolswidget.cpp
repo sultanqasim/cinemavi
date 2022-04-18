@@ -83,7 +83,8 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     debayerModeSelector = new QComboBox(nrGroup);
     debayerModeSelector->addItem(tr("2x2 Nearest Neighbour"), CMBAYER_22);
     debayerModeSelector->addItem(tr("3x3 Bilinear"), CMBAYER_33);
-    debayerModeSelector->addItem(tr("5x5 Sharp"), CMBAYER_55);
+    debayerModeSelector->addItem(tr("5x5 Chroma Smoothing"), CMBAYER_55);
+    debayerModeSelector->addItem(tr("5x5 VNG"), CMBAYER_55_VNG);
     nrgl->addWidget(debayerLabel, 0, 0);
     nrgl->addWidget(debayerModeSelector, 0, 1);
     QLabel *nrModeLabel = new QLabel("Mode", nrGroup);

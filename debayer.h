@@ -16,6 +16,7 @@ void unpack12_16(uint16_t *unpacked, const void *packed12, size_t num_elems, boo
 void debayer22(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height);
 void debayer33(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height);
 void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height);
+void debayer55_vng(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height);
 
 // fast pixel binned 2x2 debayer, assumes same pixel layout as above
 // rgb output is half input width and height, so it's 3/4 the size of the bayer input buffer

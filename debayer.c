@@ -602,7 +602,361 @@ void debayer55(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t he
     }
 }
 
-// fast pixel binned 2x2 debayer
+static inline uint16_t absdiff(uint16_t a, uint16_t b)
+{
+    return a > b ? a - b : b - a;
+}
+
+// mask bits are for gradients 45 degrees going clockwise
+static uint8_t vng_mask(const uint16_t *bayer, uint16_t width, uint16_t height, uint16_t x, uint16_t y)
+{
+    uint16_t gradients[8];
+    uint16_t local = bayer_pixel(bayer, width, x, y);
+    uint16_t grad_thresh = local / 8;
+    uint8_t edge_mask = 0xFF;;
+
+    if (x < 2 || x >= width - 2 || y < 2 || y >= height - 2) {
+        // slower edge checking path
+        if (x < 2)
+            edge_mask &= ~0x38;
+        if (x >= width - 2)
+            edge_mask &= ~0x83;
+        if (y < 2)
+            edge_mask &= ~0x0E;
+        if (y >= height - 2)
+            edge_mask &= ~0xE0;
+
+        gradients[0] = (edge_mask & 0x01) ? absdiff(local, bayer_pixel(bayer, width, x + 2, y + 0)) : 0xFFFF;
+        gradients[1] = (edge_mask & 0x02) ? absdiff(local, bayer_pixel(bayer, width, x + 2, y - 2)) : 0xFFFF;
+        gradients[2] = (edge_mask & 0x04) ? absdiff(local, bayer_pixel(bayer, width, x + 0, y - 2)) : 0xFFFF;
+        gradients[3] = (edge_mask & 0x08) ? absdiff(local, bayer_pixel(bayer, width, x - 2, y - 2)) : 0xFFFF;
+        gradients[4] = (edge_mask & 0x10) ? absdiff(local, bayer_pixel(bayer, width, x - 2, y + 0)) : 0xFFFF;
+        gradients[5] = (edge_mask & 0x20) ? absdiff(local, bayer_pixel(bayer, width, x - 2, y + 2)) : 0xFFFF;
+        gradients[6] = (edge_mask & 0x40) ? absdiff(local, bayer_pixel(bayer, width, x + 0, y + 2)) : 0xFFFF;
+        gradients[7] = (edge_mask & 0x80) ? absdiff(local, bayer_pixel(bayer, width, x + 2, y + 2)) : 0xFFFF;
+    } else {
+        // faster centre path
+        gradients[0] = absdiff(local, bayer_pixel(bayer, width, x + 2, y + 0));
+        gradients[1] = absdiff(local, bayer_pixel(bayer, width, x + 2, y - 2));
+        gradients[2] = absdiff(local, bayer_pixel(bayer, width, x + 0, y - 2));
+        gradients[3] = absdiff(local, bayer_pixel(bayer, width, x - 2, y - 2));
+        gradients[4] = absdiff(local, bayer_pixel(bayer, width, x - 2, y + 0));
+        gradients[5] = absdiff(local, bayer_pixel(bayer, width, x - 2, y + 2));
+        gradients[6] = absdiff(local, bayer_pixel(bayer, width, x + 0, y + 2));
+        gradients[7] = absdiff(local, bayer_pixel(bayer, width, x + 2, y + 2));
+    }
+
+    uint8_t mask = 0x00;
+    for (int i = 0; i < 8; i++) {
+        if (gradients[i] < grad_thresh)
+            mask |= 1 << i;
+    }
+
+    // we need at least one vert/horiz and one diagonal axis in the mask to calculate surrounding colour
+    if (!(mask & 0x55))
+        mask |= edge_mask & 0x55;
+    if (!(mask & 0xAA))
+        mask |= edge_mask & 0xAA;
+
+    return mask;
+}
+
+static inline uint32_t surr_colour_rb_same_vng(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y, uint8_t mask)
+{
+    // eight surrounding pixels of same colour within 5x5 square
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    if (mask & 0x08) {
+        colour_sum += bayer_pixel(bayer, width, x - 2, y - 2);
+        num_pixels++;
+    }
+    if (mask & 0x04) {
+        colour_sum += bayer_pixel(bayer, width, x + 0, y - 2);
+        num_pixels++;
+    }
+    if (mask & 0x02) {
+        colour_sum += bayer_pixel(bayer, width, x + 2, y - 2);
+        num_pixels++;
+    }
+    if (mask & 0x10) {
+        colour_sum += bayer_pixel(bayer, width, x - 2, y + 0);
+        num_pixels++;
+    }
+    if (mask & 0x01) {
+        colour_sum += bayer_pixel(bayer, width, x + 2, y + 0);
+        num_pixels++;
+    }
+    if (mask & 0x20) {
+        colour_sum += bayer_pixel(bayer, width, x - 2, y + 2);
+        num_pixels++;
+    }
+    if (mask & 0x40) {
+        colour_sum += bayer_pixel(bayer, width, x + 0, y + 2);
+        num_pixels++;
+    }
+    if (mask & 0x80) {
+        colour_sum += bayer_pixel(bayer, width, x + 2, y + 2);
+        num_pixels++;
+    }
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_rb_opp_vng(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y, uint8_t mask)
+{
+    // four surrounding pixels of opposite colour within 3x3 or 5x5 square
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    if (mask & 0x08) {
+        colour_sum += bayer_pixel(bayer, width, x - 1, y - 1);
+        num_pixels++;
+    }
+    if (mask & 0x02) {
+        colour_sum += bayer_pixel(bayer, width, x + 1, y - 1);
+        num_pixels++;
+    }
+    if (mask & 0x20) {
+        colour_sum += bayer_pixel(bayer, width, x - 1, y + 1);
+        num_pixels++;
+    }
+    if (mask & 0x80) {
+        colour_sum += bayer_pixel(bayer, width, x + 1, y + 1);
+        num_pixels++;
+    }
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_rb_green_vng(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y, uint8_t mask)
+{
+    // twelve surrounding green pixels within 5x5 square
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    if (mask & 0x01) {
+        colour_sum += bayer_pixel(bayer, width, x + 1, y + 0);
+        num_pixels++;
+    }
+    if (mask & 0x02) {
+        colour_sum += bayer_pixel(bayer, width, x + 1, y - 2);
+        colour_sum += bayer_pixel(bayer, width, x + 2, y - 1);
+        num_pixels += 2;
+    }
+    if (mask & 0x04) {
+        colour_sum += bayer_pixel(bayer, width, x + 0, y - 1);
+        num_pixels++;
+    }
+    if (mask & 0x08) {
+        colour_sum += bayer_pixel(bayer, width, x - 1, y - 2);
+        colour_sum += bayer_pixel(bayer, width, x - 2, y - 1);
+        num_pixels += 2;
+    }
+    if (mask & 0x10) {
+        colour_sum += bayer_pixel(bayer, width, x - 1, y + 0);
+        num_pixels++;
+    }
+    if (mask & 0x20) {
+        colour_sum += bayer_pixel(bayer, width, x - 2, y + 1);
+        colour_sum += bayer_pixel(bayer, width, x - 1, y + 2);
+        num_pixels += 2;
+    }
+    if (mask & 0x40) {
+        colour_sum += bayer_pixel(bayer, width, x + 0, y + 1);
+        num_pixels++;
+    }
+    if (mask & 0x80) {
+        colour_sum += bayer_pixel(bayer, width, x + 2, y + 1);
+        colour_sum += bayer_pixel(bayer, width, x + 1, y + 2);
+        num_pixels += 2;
+    }
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_g_rowadj_vng(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y, uint8_t mask)
+{
+    // six surrounding pixels of other colour in row
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    if (mask & 0x08) {
+        colour_sum += bayer_pixel(bayer, width, x - 1, y - 2);
+        num_pixels++;
+    }
+    if (mask & 0x02) {
+        colour_sum += bayer_pixel(bayer, width, x + 1, y - 2);
+        num_pixels++;
+    }
+    if (mask & 0x10) {
+        colour_sum += bayer_pixel(bayer, width, x - 1, y + 0);
+        num_pixels++;
+    }
+    if (mask & 0x01) {
+        colour_sum += bayer_pixel(bayer, width, x + 1, y + 0);
+        num_pixels++;
+    }
+    if (mask & 0x20) {
+        colour_sum += bayer_pixel(bayer, width, x - 1, y + 2);
+        num_pixels++;
+    }
+    if (mask & 0x80) {
+        colour_sum += bayer_pixel(bayer, width, x + 1, y + 2);
+        num_pixels++;
+    }
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_g_coladj_vng(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y, uint8_t mask)
+{
+    // six surrounding pixels of other colour in column
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    if (mask & 0x08) {
+        colour_sum += bayer_pixel(bayer, width, x - 2, y - 1);
+        num_pixels++;
+    }
+    if (mask & 0x04) {
+        colour_sum += bayer_pixel(bayer, width, x + 0, y - 1);
+        num_pixels++;
+    }
+    if (mask & 0x02) {
+        colour_sum += bayer_pixel(bayer, width, x + 2, y - 1);
+        num_pixels++;
+    }
+    if (mask & 0x20) {
+        colour_sum += bayer_pixel(bayer, width, x - 2, y + 1);
+        num_pixels++;
+    }
+    if (mask & 0x40) {
+        colour_sum += bayer_pixel(bayer, width, x + 0, y + 1);
+        num_pixels++;
+    }
+    if (mask & 0x80) {
+        colour_sum += bayer_pixel(bayer, width, x + 2, y + 1);
+        num_pixels++;
+    }
+
+    return colour_sum / num_pixels;
+}
+
+static inline uint32_t surr_colour_g_green_vng(const uint16_t *bayer, uint16_t width,
+        uint16_t x, uint16_t y, uint8_t mask)
+{
+    // twelve surrounding green pixels
+    uint32_t num_pixels = 0;
+    uint32_t colour_sum = 0;
+
+    if (mask & 0x01) {
+        colour_sum += bayer_pixel(bayer, width, x + 2, y + 0);
+        num_pixels++;
+    }
+    if (mask & 0x02) {
+        colour_sum += bayer_pixel(bayer, width, x + 1, y - 1);
+        colour_sum += bayer_pixel(bayer, width, x + 2, y - 2);
+        num_pixels += 2;
+    }
+    if (mask & 0x04) {
+        colour_sum += bayer_pixel(bayer, width, x + 0, y - 2);
+        num_pixels++;
+    }
+    if (mask & 0x08) {
+        colour_sum += bayer_pixel(bayer, width, x - 1, y - 1);
+        colour_sum += bayer_pixel(bayer, width, x - 2, y - 2);
+        num_pixels += 2;
+    }
+    if (mask & 0x10) {
+        colour_sum += bayer_pixel(bayer, width, x - 2, y + 0);
+        num_pixels++;
+    }
+    if (mask & 0x20) {
+        colour_sum += bayer_pixel(bayer, width, x - 1, y + 1);
+        colour_sum += bayer_pixel(bayer, width, x - 2, y + 2);
+        num_pixels += 2;
+    }
+    if (mask & 0x40) {
+        colour_sum += bayer_pixel(bayer, width, x + 0, y + 2);
+        num_pixels++;
+    }
+    if (mask & 0x80) {
+        colour_sum += bayer_pixel(bayer, width, x + 1, y + 1);
+        colour_sum += bayer_pixel(bayer, width, x + 2, y + 2);
+        num_pixels += 2;
+    }
+
+    return colour_sum / num_pixels;
+}
+
+// variable number of gradients algorithm
+void debayer55_vng(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height)
+{
+    uint32_t sur_r, sur_g, sur_b;
+    uint16_t mask;
+
+    for (size_t y = 0; y < height;) {
+        // RG row
+        for (size_t x = 0; x < width;) {
+            // red pixel
+            mask = vng_mask(bayer, width, height, x, y);
+            sur_r = surr_colour_rb_same_vng(bayer, width, x, y, mask);
+            sur_g = surr_colour_rb_green_vng(bayer, width, x, y, mask);
+            sur_b = surr_colour_rb_opp_vng(bayer, width, x, y, mask);
+            if (sur_r == 0) sur_r = 1;
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x] * sur_g / sur_r;
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_r;
+            x++;
+
+            // green pixel
+            mask = vng_mask(bayer, width, height, x, y);
+            sur_r = surr_colour_g_rowadj_vng(bayer, width, x, y, mask);
+            sur_g = surr_colour_g_green_vng(bayer, width, x, y, mask);
+            sur_b = surr_colour_g_coladj_vng(bayer, width, x, y, mask);
+            if (sur_g == 0) sur_g = 1;
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_g;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_g;
+            x++;
+        }
+        y++;
+
+        // GB row
+        for (size_t x = 0; x < width;) {
+            // green pixel
+            mask = vng_mask(bayer, width, height, x, y);
+            sur_r = surr_colour_g_coladj_vng(bayer, width, x, y, mask);
+            sur_g = surr_colour_g_green_vng(bayer, width, x, y, mask);
+            sur_b = surr_colour_g_rowadj_vng(bayer, width, x, y, mask);
+            if (sur_g == 0) sur_g = 1;
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_g;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x];
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x] * sur_b / sur_g;
+            x++;
+
+            // blue pixel
+            mask = vng_mask(bayer, width, height, x, y);
+            sur_r = surr_colour_rb_opp_vng(bayer, width, x, y, mask);
+            sur_g = surr_colour_rb_green_vng(bayer, width, x, y, mask);
+            sur_b = surr_colour_rb_same_vng(bayer, width, x, y, mask);
+            if (sur_b == 0) sur_b = 1;
+            rgb[(width*y + x)*3 + 0] = bayer[width*y + x] * sur_r / sur_b;
+            rgb[(width*y + x)*3 + 1] = bayer[width*y + x] * sur_g / sur_b;
+            rgb[(width*y + x)*3 + 2] = bayer[width*y + x];
+            x++;
+        }
+        y++;
+    }
+}
+
+// fast pixel binned (superpixel) 2x2 debayer
 // rgb output is half the input width and height
 void debayer22_binned(const uint16_t *bayer, uint16_t *rgb, uint16_t width, uint16_t height)
 {
