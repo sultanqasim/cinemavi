@@ -162,11 +162,11 @@ void CMControlsWidget::onReset(void)
     tintSlider->setValue(this->shotTint);
     hueSlider->setValue(0);
     satSlider->setValue(1);
-    lumaSlider->setValue(-35);
-    chromaSlider->setValue(-33);
+    lumaSlider->setValue(-27);
+    chromaSlider->setValue(-25);
     gammaSlider->setValue(0.3);
     shadowSlider->setValue(1);
-    blackSlider->setValue(0.3);
+    blackSlider->setValue(0.25);
     debayerModeSelector->setCurrentIndex(CMBAYER_33);
     nrModeSelector->setCurrentIndex(CMNR_MEDIAN);
     tmModeSelector->setCurrentIndex(CMLUT_HDR_CUBIC_AUTO);
