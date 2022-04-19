@@ -30,7 +30,7 @@ typedef enum {
     CMBAYER_22,
     CMBAYER_33,
     CMBAYER_55,
-    CMBAYER_55_VNG
+    CMBAYER_VNG
 } CMDebayerMode;
 
 typedef struct {

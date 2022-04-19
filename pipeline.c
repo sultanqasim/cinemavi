@@ -136,8 +136,8 @@ int pipeline_process_image(const void *raw, uint8_t *rgb8, const CMCaptureInfo *
     case CMBAYER_55:
         debayer55(bayer12, rgb12, width, height);
         break;
-    case CMBAYER_55_VNG:
-        debayer55_vng(bayer12, rgb12, width, height);
+    case CMBAYER_VNG:
+        debayer_vng(bayer12, rgb12, width, height);
         break;
     }
 
