@@ -2,6 +2,7 @@
 #include <cstring>
 #include <QImage>
 #include "../dng.h"
+#include "../colour_xfrm.h"
 
 CMSaveWorker::CMSaveWorker(QObject *parent)
     : QObject{parent}
@@ -32,26 +33,29 @@ void CMSaveWorker::save()
 
     int status = -1;
 
+    // make capture info match "as shot" white balance
+    CMRawHeader cmrh = this->imgRaw.getRawHeader();
+    double white_x, white_y;
+    colour_temp_tint_to_xy(this->plParams.temp_K, this->plParams.tint, &white_x, &white_y);
+    cmrh.cinfo.white_x = white_x;
+    cmrh.cinfo.white_y = white_y;
+
     if (endsWith(this->fileName, ".cmr")) {
-        status = cmraw_save(this->imgRaw.getRaw(), &this->imgRaw.getRawHeader(),
-                this->fileName.c_str());
+        status = cmraw_save(this->imgRaw.getRaw(), &cmrh, this->fileName.c_str());
     } else if (endsWith(this->fileName, ".dng")) {
-        status = bayer_rg12p_to_dng(this->imgRaw.getRaw(), &this->imgRaw.getRawHeader(),
-                this->fileName.c_str());
+        status = bayer_rg12p_to_dng(this->imgRaw.getRaw(), &cmrh, this->fileName.c_str());
     } else if (endsWith(this->fileName, ".tiff") || endsWith(this->fileName, ".tif")) {
         std::vector<uint8_t> imgRgb8;
-        const CMCaptureInfo &cinfo = this->imgRaw.getCaptureInfo();
-        imgRgb8.resize(cinfo.width * cinfo.height * 3);
-        status = pipeline_process_image(this->imgRaw.getRaw(), imgRgb8.data(), &cinfo, &this->plParams);
+        imgRgb8.resize(cmrh.cinfo.width * cmrh.cinfo.height * 3);
+        status = pipeline_process_image(this->imgRaw.getRaw(), imgRgb8.data(), &cmrh.cinfo, &this->plParams);
         if (status == 0)
-            status = rgb8_to_tiff(imgRgb8.data(), cinfo.width, cinfo.height, this->fileName.c_str());
+            status = rgb8_to_tiff(imgRgb8.data(), cmrh.cinfo.width, cmrh.cinfo.height, this->fileName.c_str());
     } else if (endsWith(this->fileName, ".jpg") || endsWith(this->fileName, ".jpeg")) {
         std::vector<uint8_t> imgRgb8;
-        const CMCaptureInfo &cinfo = this->imgRaw.getCaptureInfo();
-        imgRgb8.resize(cinfo.width * cinfo.height * 3);
-        status = pipeline_process_image(this->imgRaw.getRaw(), imgRgb8.data(), &cinfo, &this->plParams);
+        imgRgb8.resize(cmrh.cinfo.width * cmrh.cinfo.height * 3);
+        status = pipeline_process_image(this->imgRaw.getRaw(), imgRgb8.data(), &cmrh.cinfo, &this->plParams);
         if (status == 0) {
-            QImage img(imgRgb8.data(), cinfo.width, cinfo.height, cinfo.width*3, QImage::Format_RGB888);
+            QImage img(imgRgb8.data(), cmrh.cinfo.width, cmrh.cinfo.height, cmrh.cinfo.width*3, QImage::Format_RGB888);
             if (img.save(QString::fromStdString(this->fileName)) != true)
                 status = -1;
         }
