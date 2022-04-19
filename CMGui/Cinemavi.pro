@@ -41,6 +41,7 @@ SOURCES += \
     cmnumberslider.cpp \
     cmpicturelabel.cpp \
     cmrawimage.cpp \
+    cmrawinfowidget.cpp \
     cmrenderqueue.cpp \
     cmrenderworker.cpp \
     cmsaveworker.cpp \
@@ -70,6 +71,7 @@ HEADERS += \
     cmnumberslider.h \
     cmpicturelabel.h \
     cmrawimage.h \
+    cmrawinfowidget.h \
     cmrenderqueue.h \
     cmrenderworker.h \
     cmsaveworker.h \

@@ -14,6 +14,7 @@
 #include "cmcameracontrols.h"
 #include "cmrenderqueue.h"
 #include "cmautoexposure.h"
+#include "cmrawinfowidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -46,6 +47,7 @@ private:
     CMPictureLabel *imgLabel;
     CMControlsWidget *controls;
     CMCameraControls *camControls;
+    CMRawInfoWidget *rawInfoWidget;
     QAction *saveAction;
     CMRenderQueue *renderQueue;
     CMCameraInterface *cameraInterface;

@@ -37,8 +37,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     QScrollArea *ctrlScrollRegionWidget = new QScrollArea(ctrlWidget);
     this->camControls = new CMCameraControls(this);
+    this->rawInfoWidget = new CMRawInfoWidget(this);
     vbl->addWidget(ctrlScrollRegionWidget, 1);
     vbl->addWidget(camControls);
+    vbl->addWidget(rawInfoWidget);
 
     ctrlScrollRegionWidget->setFixedWidth(400);
     ctrlScrollRegionWidget->setMinimumHeight(240);
@@ -53,6 +55,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this->camControls, &CMCameraControls::shootClicked, this, &MainWindow::onShoot);
     connect(this->camControls, &CMCameraControls::exposureChanged,
             this, &MainWindow::onExposureChanged);
+
+    this->rawInfoWidget->setHidden(true); // only visible when cmraw file open
 
     this->renderQueue = new CMRenderQueue(this);
     connect(this->renderQueue, &CMRenderQueue::imageRendered,
@@ -116,6 +120,8 @@ void MainWindow::onOpenRaw()
         CMRawImage img;
         this->cameraInterface->stopCapture();
         this->camControls->setHidden(true);
+        this->rawInfoWidget->setRawHeader(cmrh);
+        this->rawInfoWidget->setHidden(false);
         img.setImage(raw, cmrh);
         this->renderQueue->setImageLater(img);
         free(raw);
@@ -150,6 +156,7 @@ void MainWindow::onOpenCamera()
     this->rawFileInfo.setFile("");
     this->camControls->setExposureLimits(this->cameraInterface->getExposureLimits());
     this->camControls->setHidden(false);
+    this->rawInfoWidget->setHidden(true);
 }
 
 void MainWindow::onSaveImage()
@@ -265,6 +272,7 @@ void MainWindow::onClose()
     CMRawImage emptyImg;
     this->cameraInterface->stopCapture();
     this->camControls->setHidden(true);
+    this->rawInfoWidget->setHidden(true);
     this->renderQueue->setImageLater(emptyImg);
     this->controls->setShotWhiteBalance();
     this->setWindowTitle(tr("Cinemavi"));
