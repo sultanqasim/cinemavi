@@ -59,9 +59,9 @@ void CMRenderQueue::startRender()
     renderThread.start();
 }
 
-void CMRenderQueue::renderDone(const QPixmap &pm)
+void CMRenderQueue::renderDone(const QImage &img)
 {
-    emit imageRendered(pm);
+    emit imageRendered(img);
     renderThread.quit();
     renderThread.wait();
 

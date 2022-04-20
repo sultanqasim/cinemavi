@@ -22,7 +22,7 @@ void CMRenderWorker::render() {
     assert(this->imgRaw != NULL);
 
     if (this->imgRaw->isEmpty()) {
-        emit imageRendered(QPixmap());
+        emit imageRendered(QImage());
         return;
     }
 
@@ -34,8 +34,5 @@ void CMRenderWorker::render() {
     pipeline_process_image_bin22(this->imgRaw->getRaw(), imgRgb8.data(),
                                  &this->imgRaw->getCaptureInfo(), &this->plParams);
     QImage img(imgRgb8.data(), width_out, height_out, width_out*3, QImage::Format_RGB888);
-    QPixmap pixmap;
-    pixmap.convertFromImage(img);
-
-    emit imageRendered(pixmap);
+    emit imageRendered(img);
 }

@@ -2,7 +2,7 @@
 #define CMRENDERWORKER_H
 
 #include <QObject>
-#include <QPixmap>
+#include <QImage>
 #include "cmrawimage.h"
 #include "../pipeline.h"
 
@@ -18,7 +18,7 @@ public slots:
     void render();
 
 signals:
-    void imageRendered(const QPixmap &pm);
+    void imageRendered(const QImage &img);
 
 private:
     ImagePipelineParams plParams;

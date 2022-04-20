@@ -2,10 +2,13 @@
 
 #include <QResizeEvent>
 #include <QImage>
+#include <QFile>
+#include <QColorSpace>
 
 CMPictureLabel::CMPictureLabel(QWidget *parent) :
     QWidget(parent)
 {
+    this->loadDisplayColourTransform();
     imgLabel = new QLabel(this);
     imgLabel->setAlignment(Qt::AlignCenter);
     imgLabel->setPixmap(imgMap);
@@ -58,16 +61,14 @@ void CMPictureLabel::mousePressEvent(QMouseEvent *event)
     QWidget::mousePressEvent(event);
 }
 
-void CMPictureLabel::setImage(const uint8_t *img_rgb8, uint16_t width, uint16_t height)
-{
-    QImage img(img_rgb8, width, height, width*3, QImage::Format_RGB888);
-
-    this->imgMap.convertFromImage(img);
-    this->regenPixmap(this->imgLabel->size());
-}
-
-void CMPictureLabel::setPixmap(const QPixmap &pm) {
-    this->imgMap = pm;
+void CMPictureLabel::setImage(const QImage &img) {
+    if (this->colourTransformValid) {
+        QImage xfmImg = img;
+        xfmImg.applyColorTransform(this->colourTransform);
+        this->imgMap.convertFromImage(xfmImg);
+    } else {
+        this->imgMap.convertFromImage(img);
+    }
     this->regenPixmap(this->imgLabel->size());
 }
 
@@ -78,4 +79,97 @@ void CMPictureLabel::regenPixmap(const QSize &size) {
     } else {
         this->imgLabel->setPixmap(this->imgMap);
     }
+}
+
+#ifdef __APPLE__
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Welaborated-enum-base"
+#include <ApplicationServices/ApplicationServices.h>
+#include <CoreFoundation/CoreFoundation.h>
+#pragma GCC diagnostic pop
+
+typedef struct {
+    CFUUIDRef dispuuid;
+    CFURLRef url;
+} ColorSyncIteratorData;
+
+static bool colorSyncIterateCallback(CFDictionaryRef dict, void *data)
+{
+    ColorSyncIteratorData *iterData = (ColorSyncIteratorData *)data;
+    CFStringRef str;
+    CFUUIDRef uuid;
+    CFBooleanRef iscur;
+
+    if (!CFDictionaryGetValueIfPresent(dict, kColorSyncDeviceClass, (const void**)&str))
+    {
+        qWarning("kColorSyncDeviceClass failed");
+        return true;
+    }
+    if (!CFEqual(str, kColorSyncDisplayDeviceClass))
+    {
+        return true;
+    }
+    if (!CFDictionaryGetValueIfPresent(dict, kColorSyncDeviceID, (const void**)&uuid))
+    {
+        qWarning("kColorSyncDeviceID failed");
+        return true;
+    }
+    if (!CFEqual(uuid, iterData->dispuuid))
+    {
+        return true;
+    }
+    if (!CFDictionaryGetValueIfPresent(dict, kColorSyncDeviceProfileIsCurrent, (const void**)&iscur))
+    {
+        qWarning("kColorSyncDeviceProfileIsCurrent failed");
+        return true;
+    }
+    if (!CFBooleanGetValue(iscur))
+    {
+        return true;
+    }
+    if (!CFDictionaryGetValueIfPresent(dict, kColorSyncDeviceProfileURL, (const void**)&(iterData->url)))
+    {
+        qWarning("Could not get current profile URL");
+        return true;
+    }
+
+    CFRetain(iterData->url);
+    return false;
+}
+
+#endif
+
+QString CMPictureLabel::getDisplayProfileURL()
+{
+#ifdef __APPLE__
+    ColorSyncIteratorData data;
+    data.dispuuid = CGDisplayCreateUUIDFromDisplayID(CGMainDisplayID());
+    data.url = NULL;
+    ColorSyncIterateDeviceProfiles(colorSyncIterateCallback, (void *)&data);
+    CFRelease(data.dispuuid);
+    CFStringRef urlstr = CFURLCopyFileSystemPath(data.url, kCFURLPOSIXPathStyle);
+    CFRelease(data.url);
+    return QString::fromCFString(urlstr);
+#else
+    // TODO: handle colord on Linux and equivalent on Windows
+    return QString();
+#endif
+}
+
+void CMPictureLabel::loadDisplayColourTransform()
+{
+    this->colourTransformValid = false;
+    QString profileURL = getDisplayProfileURL();
+    if (profileURL.isEmpty()) return;
+
+    QFile iccProfileFile(profileURL);
+    if (!iccProfileFile.open(QIODevice::ReadOnly)) return;
+    QByteArray iccProfile = iccProfileFile.readAll();
+
+    QColorSpace displaySpace = QColorSpace::fromIccProfile(iccProfile);
+    QColorSpace sRGB = QColorSpace(QColorSpace::SRgb);
+
+    this->colourTransform = sRGB.transformationToColorSpace(displaySpace);
+    this->colourTransformValid = true;
 }

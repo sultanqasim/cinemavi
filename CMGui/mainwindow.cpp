@@ -60,7 +60,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     this->renderQueue = new CMRenderQueue(this);
     connect(this->renderQueue, &CMRenderQueue::imageRendered,
-            this->imgLabel, &CMPictureLabel::setPixmap);
+            this->imgLabel, &CMPictureLabel::setImage);
     connect(this->renderQueue, &CMRenderQueue::imageSaved,
             this, &MainWindow::onSaveDone);
 

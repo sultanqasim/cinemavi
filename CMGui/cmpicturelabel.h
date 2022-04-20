@@ -3,7 +3,8 @@
 
 #include <QWidget>
 #include <QLabel>
-#include <QPixmap>
+#include <QImage>
+#include <QColorTransform>
 
 class CMPictureLabel : public QWidget
 {
@@ -12,10 +13,9 @@ class CMPictureLabel : public QWidget
 public:
     explicit CMPictureLabel(QWidget *parent = nullptr);
     ~CMPictureLabel();
-    void setImage(const uint8_t *img_rgb8, uint16_t width, uint16_t height);
 
 public slots:
-    void setPixmap(const QPixmap &pm);
+    void setImage(const QImage &img);
 
 signals:
     void picturePressed(uint16_t posX, uint16_t posY);
@@ -23,7 +23,11 @@ signals:
 private:
     QLabel *imgLabel;
     QPixmap imgMap;
+    QColorTransform colourTransform;
+    bool colourTransformValid;
     void regenPixmap(const QSize &size);
+    QString getDisplayProfileURL();
+    void loadDisplayColourTransform();
 
 protected:
     void resizeEvent(QResizeEvent *event);

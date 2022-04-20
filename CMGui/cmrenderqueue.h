@@ -2,7 +2,7 @@
 #define CMRENDERQUEUE_H
 
 #include <QObject>
-#include <QPixmap>
+#include <QImage>
 #include <QThread>
 #include <QString>
 #include "cmrenderworker.h"
@@ -25,11 +25,11 @@ public:
 
 public slots:
     void setImage(const CMRawImage &img);
-    void renderDone(const QPixmap &pm);
+    void renderDone(const QImage &img);
     void saveDone(bool success);
 
 signals:
-    void imageRendered(const QPixmap &pm);
+    void imageRendered(const QImage &img);
     void imageSaved(bool success);
 
 private:
