@@ -30,7 +30,7 @@ public:
     QString getCameraName();
 
 signals:
-    void imageCaptured(CMRawImage &img);
+    void imageCaptured(const CMRawImage &img);
 
 private slots:
     void captureLoop();
