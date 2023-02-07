@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "cmpicturelabel.h"
-#include "cmnumberslider.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
