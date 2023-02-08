@@ -270,19 +270,17 @@ static unsigned grey_sum(const ColourPixel_f *img_pixel, uint16_t width, uint16_
     return num_pixels;
 }
 
-// Huo's Robust Automatic White Balance
-// https://web.stanford.edu/~sujason/ColorBalancing/robustawb.html
-// outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
-void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t height,
+// classic grey world algorithm
+void auto_white_balance_grey_world(const float *img_rgb, uint16_t width, uint16_t height,
         double *red, double *blue)
 {
     uint16_t samp_pitch = pick_samp_pitch(width, height);
     uint16_t samp_width = width / samp_pitch;
     uint16_t samp_height = height / samp_pitch;
 
-    ColourPixel_f *samp_buf = (ColourPixel_f *)malloc(samp_width * samp_height * sizeof(ColourPixel_f));
-    ColourPixel_f *samp_buf2 = (ColourPixel_f *)malloc(samp_width * samp_height * sizeof(ColourPixel_f));
-    if (samp_buf == NULL || samp_buf2 == NULL) {
+    const size_t samp_buf_size = samp_width * samp_height * sizeof(ColourPixel_f);
+    ColourPixel_f *samp_buf = (ColourPixel_f *)malloc(samp_buf_size);
+    if (samp_buf == NULL) {
         *red = 1;
         *blue = 1;
         goto cleanup;
@@ -296,35 +294,65 @@ void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t he
         }
     }
 
-    // Note: original algorithm iterated till convergence,
-    // while my version just does two iterations with different thresholds
     ColourPixel_f colour_sum;
-    unsigned num_pixels = grey_sum(samp_buf, samp_width, samp_height, 0.25, &colour_sum);
+    grey_sum(samp_buf, samp_width, samp_height, 0, &colour_sum);
+    *red = colour_sum.p[1] / colour_sum.p[0];
+    *blue = colour_sum.p[1] / colour_sum.p[2];
 
+cleanup:
+    free(samp_buf);
+}
+
+// Huo's Robust Automatic White Balance
+// https://web.stanford.edu/~sujason/ColorBalancing/robustawb.html
+// outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
+void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t height,
+        double *red, double *blue)
+{
+    uint16_t samp_pitch = pick_samp_pitch(width, height);
+    uint16_t samp_width = width / samp_pitch;
+    uint16_t samp_height = height / samp_pitch;
+
+    *red = 1;
+    *blue = 1;
+
+    const size_t samp_buf_size = samp_width * samp_height * sizeof(ColourPixel_f);
+    ColourPixel_f *samp_buf = (ColourPixel_f *)malloc(samp_buf_size);
+    ColourPixel_f *samp_buf2 = (ColourPixel_f *)malloc(samp_buf_size);
+    if (samp_buf == NULL || samp_buf2 == NULL) {
+        goto cleanup;
+    }
+
+    // populate samp_buf with downsampled image
+    for (unsigned y = 0; y < samp_height; y++) {
+        for (unsigned x = 0; x < samp_width; x++) {
+            memcpy(&samp_buf[y*samp_width + x], &img_rgb[(y*samp_pitch*width + x*samp_pitch)*3],
+                    sizeof(ColourPixel_f));
+        }
+    }
+
+    // Start with grey-ish world, then iteratively tighten the chroma threshold
+    ColourPixel_f colour_sum;
     unsigned pixel_thresh = samp_width * samp_height * 0.02;
-    if (num_pixels > pixel_thresh) {
-        *red = colour_sum.p[1] / colour_sum.p[0];
-        *blue = colour_sum.p[1] / colour_sum.p[2];
+    double chroma_thresh = 0.8;
+    unsigned num_pixels = grey_sum(samp_buf, samp_width, samp_height, chroma_thresh, &colour_sum);
 
-        // transform original image based on first iteration
+    while (num_pixels > pixel_thresh) {
+        *red *= colour_sum.p[1] / colour_sum.p[0];
+        *blue *= colour_sum.p[1] / colour_sum.p[2];
+
+        chroma_thresh *= 0.6;
+        if (chroma_thresh < 0.1) break;
+
+        // transform image based on this iteration
         ColourMatrix cmat;
         ColourMatrix_f cmat_f;
         colour_matrix(&cmat, *red, *blue, 0, 1);
         cmat_d2f(&cmat, &cmat_f);
         colour_xfrm((float *)samp_buf, (float *)samp_buf2, samp_width, samp_height, &cmat_f);
 
-        // second iteration with tighter threshold
-        num_pixels = grey_sum(samp_buf2, samp_width, samp_height, 0.15, &colour_sum);
-
-        if (num_pixels > pixel_thresh) {
-            *red *= colour_sum.p[1] / colour_sum.p[0];
-            *blue *= colour_sum.p[1] / colour_sum.p[2];
-        }
-    } else {
-        // fallback to classic grey world if too few original pixels were low-chroma
-        grey_sum(samp_buf, samp_width, samp_height, 0, &colour_sum);
-        *red = colour_sum.p[1] / colour_sum.p[0];
-        *blue = colour_sum.p[1] / colour_sum.p[2];
+        // now perform grey colour calculation with current threshold
+        num_pixels = grey_sum(samp_buf2, samp_width, samp_height, chroma_thresh, &colour_sum);
     }
 
 cleanup:

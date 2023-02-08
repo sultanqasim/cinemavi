@@ -330,6 +330,9 @@ int pipeline_auto_white_balance(const void *raw, const CMCaptureInfo *cinfo,
     case CMWHITE_BRIGHTS:
         auto_white_balance_brights(rgbf_1, width, height, &red, &blue);
         break;
+    case CMWHITE_GREY:
+        auto_white_balance_grey_world(rgbf_1, width, height, &red, &blue);
+        break;
     case CMWHITE_ROBUST:
         auto_white_balance_robust(rgbf_1, width, height, &red, &blue);
         break;

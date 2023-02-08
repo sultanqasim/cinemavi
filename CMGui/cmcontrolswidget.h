@@ -27,6 +27,7 @@ public slots:
     void onLUTModeChanged(int index);
     void onSliderChanged(double val);
     void onBrightsWhiteBalance();
+    void onGreyWhiteBalance();
     void onRobustWhiteBalance();
     void onReset();
 

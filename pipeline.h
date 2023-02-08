@@ -59,6 +59,7 @@ int pipeline_process_image_bin22(const void *raw, uint8_t *rgb8, const CMCapture
 
 typedef enum {
     CMWHITE_BRIGHTS,
+    CMWHITE_GREY,
     CMWHITE_ROBUST,
     CMWHITE_SPOT
 } CMAutoWhiteMode;

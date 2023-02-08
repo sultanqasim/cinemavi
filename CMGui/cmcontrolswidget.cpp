@@ -53,10 +53,12 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     QHBoxLayout *autoButtonsLayout = new QHBoxLayout(autoButtons);
     autoButtonsLayout->setContentsMargins(0, 0, 0, 0);
     QPushButton *brightsWhiteButton = new QPushButton(tr("Brights"), autoButtons);
+    QPushButton *greyWhiteButton = new QPushButton(tr("Grey"), autoButtons);
     QPushButton *robustWhiteButton = new QPushButton(tr("Robust"), autoButtons);
     spotWhiteButton = new QPushButton(tr("Spot"), autoButtons);
     spotWhiteButton->setCheckable(true);
     autoButtonsLayout->addWidget(brightsWhiteButton);
+    autoButtonsLayout->addWidget(greyWhiteButton);
     autoButtonsLayout->addWidget(robustWhiteButton);
     autoButtonsLayout->addWidget(spotWhiteButton);
     wbgl->addWidget(awbLabel, 2, 0);
@@ -150,6 +152,7 @@ CMControlsWidget::CMControlsWidget(QWidget *parent)
     connect(this->nrModeSelector, &QComboBox::currentIndexChanged, this, &CMControlsWidget::onNRModeChanged);
     connect(this->tmModeSelector, &QComboBox::currentIndexChanged, this, &CMControlsWidget::onLUTModeChanged);
     connect(brightsWhiteButton, &QPushButton::clicked, this, &CMControlsWidget::onBrightsWhiteBalance);
+    connect(greyWhiteButton, &QPushButton::clicked, this, &CMControlsWidget::onGreyWhiteBalance);
     connect(robustWhiteButton, &QPushButton::clicked, this, &CMControlsWidget::onRobustWhiteBalance);
     connect(resetButton, &QPushButton::clicked, this, &CMControlsWidget::onReset);
 
@@ -267,6 +270,11 @@ void CMControlsWidget::getParams(ImagePipelineParams *params)
 void CMControlsWidget::onBrightsWhiteBalance()
 {
     emit autoWhiteBalanceTriggered(CMWHITE_BRIGHTS);
+}
+
+void CMControlsWidget::onGreyWhiteBalance()
+{
+    emit autoWhiteBalanceTriggered(CMWHITE_GREY);
 }
 
 void CMControlsWidget::onRobustWhiteBalance()

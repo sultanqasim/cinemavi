@@ -27,9 +27,13 @@ double auto_exposure(const uint16_t *img_rgb, uint16_t width, uint16_t height,
 // Returns darkest pixel value in green channel or 0.02, whichever is lower
 float auto_black_point(const float *img_rgb, uint16_t width, uint16_t height);
 
-// grey-world inspired algorithm that balances the 99.5th percentiles of each channel
+// grey world inspired algorithm that balances the 99.5th percentiles of each channel
 // outputs: red is ratio to multiply red by, blue is ratio to multiply blue by
 void auto_white_balance_brights(const float *img_rgb, uint16_t width, uint16_t height,
+        double *red, double *blue);
+
+// classic grey world algorithm
+void auto_white_balance_grey_world(const float *img_rgb, uint16_t width, uint16_t height,
         double *red, double *blue);
 
 // Huo's Robust Automatic White Balance
