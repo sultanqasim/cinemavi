@@ -333,7 +333,7 @@ void auto_white_balance_robust(const float *img_rgb, uint16_t width, uint16_t he
 
     // Start with grey-ish world, then iteratively tighten the chroma threshold
     ColourPixel_f colour_sum;
-    unsigned pixel_thresh = samp_width * samp_height * 0.02;
+    unsigned pixel_thresh = samp_width * samp_height * 0.05;
     double chroma_thresh = 0.8;
     unsigned num_pixels = grey_sum(samp_buf, samp_width, samp_height, chroma_thresh, &colour_sum);
 
